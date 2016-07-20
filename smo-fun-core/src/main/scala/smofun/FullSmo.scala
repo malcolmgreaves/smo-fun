@@ -1,5 +1,0 @@
-package smofun
-
-object FullSmo {
-
-}
