@@ -34,10 +34,10 @@ object SequentialMinimalOptimization {
   )
 
   case class SvmDualModel(
-    combinedTargetAlphas: Seq[Double],
-    vectors: Seq[Vec],
-    b: Double,
-    K: Kernel
+      combinedTargetAlphas: Seq[Double],
+      vectors: Seq[Vec],
+      b: Double,
+      K: Kernel
   ) {
     assert(combinedTargetAlphas.size == vectors.size)
 
@@ -97,7 +97,7 @@ object SequentialMinimalOptimization {
       val input = vecOnly(index)
       var sum = 0.0
       cfor(0)(_ < size, _ + 1) { i =>
-        if(i != index) { // TODO need a check here? does it make sense to predict against itself?
+        if (i != index) { // TODO need a check here? does it make sense to predict against itself?
           sum += targetOnly(i) * alphas(i) * K(vecOnly(i), input)
         }
       }
