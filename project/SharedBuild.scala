@@ -16,7 +16,7 @@ object SharedBuild {
 
   lazy val scalaMacros = "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
 
-  lazy val avroCodegen = nOss          %% "avro-codegen-runtime" % "0.3.4"
+  lazy val avroCodegen = "com.gonitro" %% "avro-codegen-runtime" % "0.3.4"
   lazy val shapeless   = "com.chuusai" %% "shapeless"            % "2.2.5"
 
   lazy val miscDeps = Seq(

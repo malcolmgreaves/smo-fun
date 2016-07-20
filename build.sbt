@@ -1,8 +1,5 @@
 name := "res-doc-sci"
 
-import com.nitro.build._
-
-enablePlugins(NitroProject)
 
 com.typesafe.sbt.SbtScalariform.defaultScalariformSettings
 
