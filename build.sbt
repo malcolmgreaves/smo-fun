@@ -73,6 +73,7 @@ scalacOptions in ThisBuild := Seq(
   "-Xlint",
   "-Xfuture",
   "-Ywarn-dead-code",
+  "-Yinline-warnings",
   "-Xfatal-warnings" // Every warning is esclated to an error.
 )
 javacOptions in ThisBuild := Seq("-source", javaV, "-target", javaV)
