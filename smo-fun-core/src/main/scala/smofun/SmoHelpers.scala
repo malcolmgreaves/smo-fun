@@ -1,0 +1,6 @@
+package smofun
+
+object SmoHelpers {
+
+
+}
