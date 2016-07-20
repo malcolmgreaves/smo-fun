@@ -1,9 +1,9 @@
 package smofun
 
 import breeze.linalg.DenseVector
-
 import spire.syntax.cfor._
 
+import scala.collection.mutable
 import scala.util.Random
 
 object SimplifiedSmo {
@@ -15,8 +15,8 @@ object SimplifiedSmo {
   type Alphas = Seq[Double]
 
   case class SvmConfig(
-                      C: Double
-                      )
+    C: Double
+  )
 
   def train(config: SvmConfig, data: Seq[(Vec, Target)]): Alphas = {
 
@@ -25,55 +25,62 @@ object SimplifiedSmo {
     val vecOnly = data.map { _._1 }
     val alphas = Initialize.uniform(data.size)(Random.self)
 
-    def examineExample(example: Vec, label: Target): Int = {
+    def examineExample(index: Int): Int = {
       ???
+
+      val alph2 = alphas(index)
+
     }
 
     var numChanged = 0
     var examineAll = true
 
-    while(numChanged > 0 || examineAll) {
+    while (numChanged > 0 || examineAll) {
 
       numChanged = 0
 
       //
       // update alphas
       //
-      if(examineAll) {
-        data.foreach {
-          case (example, label) =>
-            numChanged += examineExample(example, label)
+      if (examineAll) {
+        cfor(0)(_ < data.size, _ + 1) { i =>
+          numChanged += examineExample(i)
         }
 
       } else {
 
-        val nonBoundExamples =  alphas
-          .zipWithIndex
-          .filter {
-            case (a, index) =>
-              val alphaIsZero = !(a > 0) && !(a < 0.0)
-              val alphaIsC = a == C
-              !alphaIsZero && !alphaIsC
+        val nonBoundExamples = {
+
+          val x = mutable.ArrayBuilder.make[Int]()
+          x.sizeHint(data.size / 2)
+
+          cfor(0)(_ < data.size, _ + 1) { i =>
+            val a = alphas(i)
+            val alphaIsZero = !(a > 0) && !(a < 0.0)
+            val alphaIsC = a == C
+
+            if (!alphaIsZero && !alphaIsC) {
+              val _ = x += i
+            }
           }
-          .map { case (_, index) => index }
 
+          x.result()
+        }
 
-        nonBoundExamples.foreach { i =>
-          val (example, label) = data(i)
-          numChanged += examineExample(example, label)
+        cfor(0)(_ < nonBoundExamples.length, _ + 1) { i =>
+          numChanged += examineExample(i)
         }
       }
       //
       // done updating alphas
       //
 
-      if(examineAll)
+      if (examineAll)
         examineAll = false
 
-      else if(numChanged == 0)
+      else if (numChanged == 0)
         examineAll = true
     }
-
 
     alphas.toSeq
   }
