@@ -108,7 +108,7 @@ object SequentialMinimalOptimization {
 
     val errorCache = new Array[Double](size)
 
-    @inline def takeStep(i1: Int, i2: Int): Boolean =
+    def takeStep(i1: Int, i2: Int): Boolean =
       if (i1 == i2) {
         false
 
@@ -222,7 +222,7 @@ object SequentialMinimalOptimization {
         }
       }
 
-    @inline def examineExample(index: Int): Int = {
+    def examineExample(index: Int): Int = {
       val y2 = targetOnly(index)
       val alph2 = alphas(index)
 
