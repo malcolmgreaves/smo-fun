@@ -2,5 +2,4 @@ package smofun
 
 object FullSmo {
 
-
 }
