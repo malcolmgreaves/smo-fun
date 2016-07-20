@@ -8,7 +8,7 @@ It is undergoing active, radpid development: it is not stable. See the "WIP" sec
 
 # Project Structure
 
-`res-doc-sci` is split into subprojects. 
+This repository is split into subprojects:
 
 * [smo-fun-core](https://github.com/malcolmgreaves/smo-fun/tree/master/smo-fun-core)
   * contains algorithm implementations
@@ -17,3 +17,7 @@ It is undergoing active, radpid development: it is not stable. See the "WIP" sec
 * [smo-fun-cmd](https://github.com/malcolmgreaves/smo-fun/tree/master/smo-fun-cmd)
   * contains command line applications that use the code from `smo-fun-core`
   * intended to be used as a suite of tools to assist fellow machine learniner practitioners
+
+# Legal
+
+The original author retains copyright over all material contained within this repository. Use of this code is governed under the terms of the Apache 2.0 open source software license. See the [LICENSE](./LICENSE) file for more details.

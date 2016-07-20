@@ -1,5 +1,4 @@
-name := "res-doc-sci"
-
+name := "smo-fun"
 
 com.typesafe.sbt.SbtScalariform.defaultScalariformSettings
 
