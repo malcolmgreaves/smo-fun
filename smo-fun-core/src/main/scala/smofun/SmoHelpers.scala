@@ -1,7 +1,10 @@
 package smofun
 
+import java.util.concurrent.TimeUnit
+
 import spire.syntax.cfor._
 
+import scala.concurrent.duration.Duration
 import scala.util.Random
 
 object SmoHelpers {
@@ -54,6 +57,15 @@ object SmoHelpers {
         }
       }
 
+  }
+
+  @inline def time[T](x: => T): (T, Duration) = {
+
+    val start = System.nanoTime()
+    val result = x
+    val end = System.nanoTime()
+
+    (result, Duration(end - start, TimeUnit.NANOSECONDS))
   }
 
 }
