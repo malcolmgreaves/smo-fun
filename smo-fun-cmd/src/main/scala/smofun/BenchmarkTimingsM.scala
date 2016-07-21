@@ -24,7 +24,7 @@ object BenchmarkTimingsM extends App {
   val (nVec, dimensonality, spread) = (100, 20, 500)
   println(s"Creating benchmark data ($nVec vectors, $dimensonality length each)")
 
-  val (randoData, dataCreationTime)= time {
+  val (randoData, dataCreationTime) = time {
     (0 until nVec).map { _ =>
       val x = DenseVector(
         SmoHelpers.Initialize.uniform(dimensonality)(Random.self)

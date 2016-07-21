@@ -1,13 +1,10 @@
 package smofun
 
-
 import breeze.linalg.DenseVector
 import org.scalatest.FunSuite
 import smofun.SequentialMinimalOptimization._
 import smofun.SmoHelpers._
 import Kernels._
-
-
 
 class SanityCheckSmoTest extends FunSuite {
   import SanityCheckSmoTest._
