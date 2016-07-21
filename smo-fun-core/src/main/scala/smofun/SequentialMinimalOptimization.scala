@@ -34,24 +34,39 @@ object SequentialMinimalOptimization {
   )
 
   case class SvmDualModel(
-      combinedTargetAlphas: Seq[Double],
-      vectors: Seq[Vec],
+      alphas: IndexedSeq[Double],
+      targets: IndexedSeq[Double],
+      vectors: IndexedSeq[Vec],
       b: Double,
       K: Kernel
   ) {
-    assert(combinedTargetAlphas.size == vectors.size)
+    assert(alphas.size == targets.size)
+    assert(targets.size == vectors.size)
+    val size = alphas.size
+  }
 
-    private[this] val size = combinedTargetAlphas.size
+  type Classifier = Vec => Target
 
-    @inline def predict(input: Vec): Target = {
-      var sum = 0.0
-      cfor(0)(_ < size, _ + 1) { i =>
-        sum += combinedTargetAlphas(i) * K(vectors(i), input)
+  lazy val predict: SvmDualModel => Classifier = {
+    case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
+      val size = m.size
+      val combinedTargetAlphas = {
+        val preCompTargetAlphs = new Array[Double](size)
+        cfor(0)(_ < size, _ + 1) { i =>
+          preCompTargetAlphs(i) = targets(i) * alphas(i)
+        }
+        preCompTargetAlphs.toIndexedSeq
       }
-      sum -= b
-      ///
-      sum
-    }
+
+      input => {
+        var sum = 0.0
+        cfor(0)(_ < size, _ + 1) { i =>
+          sum += combinedTargetAlphas(i) * kernel(vectors(i), input)
+        }
+        sum -= b
+        ///
+        sum
+      }
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -370,14 +385,9 @@ object SequentialMinimalOptimization {
     // finished training, output model information
 
     SvmDualModel(
-      combinedTargetAlphas = {
-      val preCompTargetAlphs = new Array[Double](size)
-      cfor(0)(_ < size, _ + 1) { i =>
-        preCompTargetAlphs(i) = targetOnly(i) * alphas(i)
-      }
-      preCompTargetAlphs.toSeq
-    },
-      vectors = vecOnly,
+      alphas = alphas.toIndexedSeq,
+      targets = targetOnly.toIndexedSeq,
+      vectors = vecOnly.toIndexedSeq,
       b = b,
       K = K
     )
