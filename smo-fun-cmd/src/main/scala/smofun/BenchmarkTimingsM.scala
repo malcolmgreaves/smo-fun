@@ -1,5 +1,6 @@
 package smofun
 
+import java.io.{ BufferedWriter, File, FileWriter }
 import java.util.concurrent.TimeUnit
 
 import breeze.linalg.DenseVector
@@ -21,10 +22,11 @@ object BenchmarkTimingsM extends App {
     )
   ) _
 
-  val (nVec, dimensonality, spread) = (
+  val (nVec, dimensonality, spread, writeOutData) = (
     Try(args.head.toInt).toOption.getOrElse(1000),
     Try(args(1).toInt).toOption.getOrElse(100),
-    Try(args(2).toInt).toOption.getOrElse(500)
+    Try(args(2).toInt).toOption.getOrElse(500),
+    Try(args(3).toBoolean).toOption.getOrElse(true)
   )
 
   println(s"Creating benchmark data ($nVec vectors, $dimensonality length each)")
@@ -45,12 +47,23 @@ object BenchmarkTimingsM extends App {
     s"Done creating benchmark data, took ${dataCreationTime.toSeconds} seconds"
   )
 
-  // crappy JIT warmup sequence ...
-  val (_, jitWarmupTime) = time {
-    cfor(0)(_ < 5, _ + 1) { _ =>
-      val _ = smoSolver(randoData)
+  if (writeOutData) {
+    val loc = new File("syntehtic_data_svm-light_fmt")
+    val w = new BufferedWriter(new FileWriter(loc))
+    randoData.foreach {
+      case (x, y) =>
+        val bothIdxVal = x.toArray.zipWithIndex.map {
+          case (v, i) => s"$i:$v"
+        }
+        w.write(s"""$y ${bothIdxVal.mkString(" ")}""")
+        w.newLine()
     }
+    w.close()
+    println(s"Wrote out syntehtic data in svm-light format to: $loc")
   }
+
+  // crappy JIT warmup sequence ...
+  val (_, jitWarmupTime) = time { val _ = smoSolver(randoData) }
   println(
     s"benchmark: JIT warmup sequence complete, took ${jitWarmupTime.toSeconds} seconds"
   )

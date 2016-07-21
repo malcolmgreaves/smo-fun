@@ -1,5 +1,6 @@
 
 
+svm_light_cmp
 index-*.html
 plot_data_*
 TESTING/second_experiment_EXPSIZE=500/WORKSPACE/
