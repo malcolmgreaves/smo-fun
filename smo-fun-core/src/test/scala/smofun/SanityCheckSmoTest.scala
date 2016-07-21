@@ -5,27 +5,20 @@ import java.util.concurrent.TimeUnit
 import breeze.linalg.DenseVector
 import org.scalatest.FunSuite
 import smofun.SequentialMinimalOptimization.SvmConfig
+import smofun.SmoHelpers.Kernels._
+import spire.syntax.cfor._
 
 import scala.concurrent.duration._
+import scala.util.Random
 
 class SanityCheckSmoTest extends FunSuite {
 
-  import SmoHelpers.Kernels._
   import SanityCheckSmoTest._
   import SequentialMinimalOptimization.{ calcMarginDist, onSameSide }
 
   test("Should memorize on tiny, toy data") {
 
-    val (svm, trainingTime) = time {
-      SequentialMinimalOptimization.train(
-        config = SvmConfig(
-          C = 1.0,
-          tolerance = 0.0001,
-          K = gaussian(1.0)
-        ),
-        data = dataToy
-      )
-    }
+    val (svm, trainingTime) = time { smoSolver(dataToy) }
     val predict = calcMarginDist(svm)
 
     println(
@@ -53,9 +46,72 @@ class SanityCheckSmoTest extends FunSuite {
     )
   }
 
+  test("Synthetic benchmark, 10k vectors, 1k dimensions each") {
+    import SequentialMinimalOptimization.{ Vec, Target }
+
+    val (nVec, dimensonality, spread) = (10000, 1000, 500)
+
+    val randoData: Seq[(Vec, Target)] =
+      (0 until nVec).map { _ =>
+        val x = DenseVector(
+          SmoHelpers.Initialize.uniform(dimensonality)(Random.self)
+        )
+        cfor(0)(_ < x.length, _ + 1) { i =>
+          x(i) *= Random.nextInt(spread).toDouble
+        }
+        val y = if (Random.nextBoolean()) 1d else -1d
+        (x, y)
+      }
+
+    // crappy JIT warmup sequence ...
+    cfor(0)(_ < 5, _ + 1) { _ =>
+      val _ = smoSolver(randoData)
+    }
+    println(s"benchmark: JIT warmup sequence complete")
+
+    // do timing tests
+    val nTest = 5
+    val trainingTimes =
+      (0 until nTest)
+        .map { _ =>
+          val (_, trainingTime) = time { smoSolver(randoData) }
+          trainingTime
+        }
+
+    val sumTotalNanos = trainingTimes.map { _.toNanos }.sum
+
+    val asDurationAvg = Duration(sumTotalNanos / nTest, TimeUnit.NANOSECONDS)
+
+    val stdDev = {
+      val meanInNanos: Double = sumTotalNanos.toDouble / nTest.toDouble
+      val squaredDeviations =
+        trainingTimes
+          .map { _.toNanos }
+          .map { ns =>
+            val diff = meanInNanos - ns
+            diff * diff
+          }
+      val avgSqDev = squaredDeviations.sum / squaredDeviations.size.toDouble
+
+      Duration(math.sqrt(avgSqDev), TimeUnit.NANOSECONDS)
+    }
+
+    println(
+      s"Took an average of ${asDurationAvg.toSeconds} +/- ${stdDev.toSeconds} seconds for $nTest runs on $nVec examples of $dimensonality length each"
+    )
+  }
+
 }
 
 object SanityCheckSmoTest {
+
+  lazy val smoSolver = SequentialMinimalOptimization.train(
+    SvmConfig(
+      C = 1.0,
+      tolerance = 0.0001,
+      K = gaussian(1.0)
+    )
+  ) _
 
   @inline def time[T](x: => T): (T, Duration) = {
 

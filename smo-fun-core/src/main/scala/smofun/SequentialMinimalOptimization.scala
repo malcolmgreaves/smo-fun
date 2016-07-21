@@ -72,10 +72,7 @@ object SequentialMinimalOptimization {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
-  def train(
-    config: SvmConfig,
-    data: Seq[(Vec, Target)]
-  ): SvmDualModel = {
+  def train(config: SvmConfig)(data: Seq[(Vec, Target)]): SvmDualModel = {
 
     import config._
 
