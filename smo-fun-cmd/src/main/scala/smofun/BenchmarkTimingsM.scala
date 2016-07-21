@@ -22,11 +22,12 @@ object BenchmarkTimingsM extends App {
     )
   ) _
 
-  val (nVec, dimensonality, spread, writeOutData) = (
+  val (nVec, dimensonality, spread, writeOutData, doJitWarmup) = (
     Try(args.head.toInt).toOption.getOrElse(1000),
     Try(args(1).toInt).toOption.getOrElse(100),
     Try(args(2).toInt).toOption.getOrElse(500),
-    Try(args(3).toBoolean).toOption.getOrElse(true)
+    Try(args(3).toBoolean).toOption.getOrElse(true),
+    Try(args(4).toBoolean).toOption.getOrElse(false)
   )
 
   println(s"Creating benchmark data ($nVec vectors, $dimensonality length each)")
@@ -53,7 +54,7 @@ object BenchmarkTimingsM extends App {
     randoData.foreach {
       case (x, y) =>
         val bothIdxVal = x.toArray.zipWithIndex.map {
-          case (v, i) => s"${i+1}:$v"
+          case (v, i) => s"${i + 1}:$v"
         }
         w.write(s"""$y ${bothIdxVal.mkString(" ")}""")
         w.newLine()
@@ -62,14 +63,20 @@ object BenchmarkTimingsM extends App {
     println(s"Wrote out syntehtic data in svm-light format to: $loc")
   }
 
-  // crappy JIT warmup sequence ...
-  val (_, jitWarmupTime) = time { val _ = smoSolver(randoData) }
-  println(
-    s"benchmark: JIT warmup sequence complete, took ${jitWarmupTime.toSeconds} seconds"
-  )
+  if (doJitWarmup) {
+    println("Doing JIT warmup w/ 1 training pass...")
+    // crappy JIT warmup sequence ...
+    val (_, jitWarmupTime) = time { val _ = smoSolver(randoData) }
+    println(
+      s"benchmark: JIT warmup sequence complete, took ${jitWarmupTime.toSeconds} seconds"
+    )
+
+  } else {
+    println("No JIT warmup, staight to training & timing")
+  }
 
   // do timing tests
-  val nTest = 5
+  val nTest = 3
   val trainingTimes =
     (0 until nTest)
       .map { _ =>
