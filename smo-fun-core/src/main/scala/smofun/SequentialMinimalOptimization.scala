@@ -97,7 +97,8 @@ object SequentialMinimalOptimization {
       val input = vecOnly(index)
       var sum = 0.0
       cfor(0)(_ < size, _ + 1) { i =>
-        if (i != index) { // TODO need a check here? does it make sense to predict against itself?
+        // TODO [mg] need a check here? does it make sense to predict against itself?
+        if (i != index) {
           sum += targetOnly(i) * alphas(i) * K(vecOnly(i), input)
         }
       }
@@ -166,7 +167,7 @@ object SequentialMinimalOptimization {
                 val f2 = y2 * (e2 + b) - s * alph1 * k12 - alph2 * k22
 
                 val l1 = alph1 + s * (alph2 - l)
-                val h1 = alph1 + s * (alph2 - l)
+                val h1 = alph1 + s * (alph2 - h)
 
                 val phiL =
                   l1 * f1 + l * f2 + 0.5 * (l1 * l1) * k11 + 0.5 * (l * l) * k22 + s * l * l1 * k12
@@ -202,19 +203,20 @@ object SequentialMinimalOptimization {
             errorCache(i2) = predict(i2) - y2
 
             // calculate the threshold update
-            if (0.0 < newAlpha1 && newAlpha1 < C) {
-              val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
-              b = b1
+            b =
+              if (0.0 < newAlpha1 && newAlpha1 < C) {
+                val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
+                b1
 
-            } else if (0.0 < newAlpha2 && newAlpha2 < C) {
-              val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
-              b = b2
+              } else if (0.0 < newAlpha2 && newAlpha2 < C) {
+                val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
+                b2
 
-            } else {
-              val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
-              val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
-              b = 0.5 * (b1 + b2)
-            }
+              } else {
+                val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
+                val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
+                0.5 * (b1 + b2)
+              }
 
             // yes we changed alphas!
             true
@@ -223,11 +225,10 @@ object SequentialMinimalOptimization {
       }
 
     def examineExample(index: Int): Int = {
+
       val y2 = targetOnly(index)
       val alph2 = alphas(index)
-
       val e2 = predict(index) - y2
-
       val r2 = e2 * y2
 
       if ((r2 < -tolerance && alph2 < C) || (r2 > tolerance && alph2 > 0.0)) {
