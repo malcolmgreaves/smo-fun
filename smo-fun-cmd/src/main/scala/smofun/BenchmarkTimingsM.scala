@@ -53,7 +53,7 @@ object BenchmarkTimingsM extends App {
     randoData.foreach {
       case (x, y) =>
         val bothIdxVal = x.toArray.zipWithIndex.map {
-          case (v, i) => s"$i:$v"
+          case (v, i) => s"${i+1}:$v"
         }
         w.write(s"""$y ${bothIdxVal.mkString(" ")}""")
         w.newLine()
