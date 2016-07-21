@@ -17,7 +17,7 @@ object BenchmarkTimingsM extends App {
   val smoSolver = SequentialMinimalOptimization.train(
     SvmConfig(
       C = 1.0,
-      tolerance = 0.0001,
+      tolerance = 0.001,
       K = gaussian(1.0)
     )
   ) _
