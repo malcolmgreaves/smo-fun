@@ -16,16 +16,20 @@ object SequentialMinimalOptimization {
 
   type Kernel = (Vec, Vec) => Target
 
-  @inline def randomExample(sz: Int, notEqualTo: Int): Int = {
-    if (sz <= 1)
-      throw new IllegalArgumentException("Size must be greater than 1, otherwise we'll loop forever!")
+  @inline def randomExample(sz: Int, notEqualTo: Int): Int =
+    if (sz == 0)
+      throw new IllegalArgumentException("Size must be greater than 0, otherwise we'll loop forever!")
 
-    var i = Random.nextInt(sz)
-    while (i == notEqualTo) {
-      i = Random.nextInt(sz)
+    else if (sz == 1)
+      0
+
+    else {
+      var i = Random.nextInt(sz)
+      while (i == notEqualTo) {
+        i = Random.nextInt(sz)
+      }
+      i
     }
-    i
-  }
 
   case class SvmConfig(
     C: Double,
@@ -250,7 +254,7 @@ object SequentialMinimalOptimization {
           val secondChoiceAlphaIndex =
             if (e2 > 0.0) {
 
-              var indexOfMinError = -1
+              var indexOfMinError = 0
               var minError = Double.MaxValue
 
               cfor(0)(_ < nonBoundExamples.length, _ + 1) { i =>
@@ -269,7 +273,7 @@ object SequentialMinimalOptimization {
             } else {
               // e2 is negative
               // cannot be zero
-              var indexOfMaxError = -1
+              var indexOfMaxError = 0
               var maxError = Double.MinValue
 
               cfor(0)(_ < nonBoundExamples.length, _ + 1) { i =>
@@ -305,7 +309,6 @@ object SequentialMinimalOptimization {
                 if (nextIndex != index) {
                   changedAnAlpha = takeStep(nextIndex, index)
                 }
-                println(s"[2nd tier, option 1] after takeStep($nextIndex, $index): $changedAnAlpha")
               }
 
               changedAnAlpha
@@ -324,7 +327,6 @@ object SequentialMinimalOptimization {
                 if (nextIndex != index) {
                   changedAnAlpha = takeStep(nextIndex, index)
                 }
-                println(s"[2nd tier, option 2] after takeStep($nextIndex, $index): $changedAnAlpha")
               }
 
               if (changedAnAlpha) {
@@ -349,9 +351,6 @@ object SequentialMinimalOptimization {
     var examineAll = true
 
     while (numChanged > 0 || examineAll) {
-
-      println(s"main loop: numChanged: $numChanged  and examineAll: $examineAll")
-
       numChanged = 0
 
       //

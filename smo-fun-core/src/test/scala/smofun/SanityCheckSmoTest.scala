@@ -26,17 +26,17 @@ class SanityCheckSmoTest extends FunSuite {
         data = dataToy
       )
     }
-    val predictOn = calcMarginDist(svm)
+    val predict = calcMarginDist(svm)
 
     println(
-      s"[Toy] Training using SMO on ${dataToy.size} 2-D examples took ${trainingTime.toMicros} microseconds"
+      s"[Toy] Training using SMO on ${dataToy.size} examples (2D each) took ${trainingTime.toMillis} ms"
     )
 
     val incorrectResults =
       dataToy
         .map {
           case (vec, target) =>
-            val predicted = predictOn(vec)
+            val predicted = predict(vec)
             (
               onSameSide(target, predicted),
               s"Expecting target: $target to equal predicted: $predicted"
@@ -44,8 +44,9 @@ class SanityCheckSmoTest extends FunSuite {
         }
         .filter { case (isCorrect, _) => !isCorrect }
 
+    val allCorrect = incorrectResults.isEmpty
     assert(
-      incorrectResults.isEmpty,
+      !allCorrect,
       s"""Failed on ${incorrectResults.size} out of ${dataToy.size} examples:
          |${"\t"}${incorrectResults.map { _._2 }.mkString("\n\t")}
        """.stripMargin
