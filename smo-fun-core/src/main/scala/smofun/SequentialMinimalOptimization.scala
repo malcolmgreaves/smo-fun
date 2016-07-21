@@ -21,7 +21,7 @@ object SequentialMinimalOptimization {
       throw new IllegalArgumentException("Size must be greater than 1, otherwise we'll loop forever!")
 
     var i = Random.nextInt(sz)
-    while (i != notEqualTo) {
+    while (i == notEqualTo) {
       i = Random.nextInt(sz)
     }
     i
@@ -45,29 +45,24 @@ object SequentialMinimalOptimization {
     val size = alphas.size
   }
 
-  type Classifier = Vec => Target
+  type BinaryClassifier = Vec => Boolean
 
-  lazy val predict: SvmDualModel => Classifier = {
+  lazy val calcMarginDist: SvmDualModel => Vec => Target = {
     case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
       val size = m.size
-      val combinedTargetAlphas = {
-        val preCompTargetAlphs = new Array[Double](size)
-        cfor(0)(_ < size, _ + 1) { i =>
-          preCompTargetAlphs(i) = targets(i) * alphas(i)
-        }
-        preCompTargetAlphs.toIndexedSeq
-      }
-
       input => {
         var sum = 0.0
         cfor(0)(_ < size, _ + 1) { i =>
-          sum += combinedTargetAlphas(i) * kernel(vectors(i), input)
+          sum += kernel(vectors(i), input) * targets(i) * alphas(i)
         }
         sum -= b
         ///
         sum
       }
   }
+
+  lazy val onSameSide: (Target, Target) => Boolean =
+    (y1, y2) => y1 > 0.0 && y2 > 0.0
 
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
@@ -114,7 +109,7 @@ object SequentialMinimalOptimization {
       cfor(0)(_ < size, _ + 1) { i =>
         // TODO [mg] need a check here? does it make sense to predict against itself?
         if (i != index) {
-          sum += targetOnly(i) * alphas(i) * K(vecOnly(i), input)
+          sum += K(vecOnly(i), input) * targetOnly(i) * alphas(i)
         }
       }
       sum -= b
@@ -310,6 +305,7 @@ object SequentialMinimalOptimization {
                 if (nextIndex != index) {
                   changedAnAlpha = takeStep(nextIndex, index)
                 }
+                println(s"[2nd tier, option 1] after takeStep($nextIndex, $index): $changedAnAlpha")
               }
 
               changedAnAlpha
@@ -328,6 +324,7 @@ object SequentialMinimalOptimization {
                 if (nextIndex != index) {
                   changedAnAlpha = takeStep(nextIndex, index)
                 }
+                println(s"[2nd tier, option 2] after takeStep($nextIndex, $index): $changedAnAlpha")
               }
 
               if (changedAnAlpha) {
@@ -352,6 +349,8 @@ object SequentialMinimalOptimization {
     var examineAll = true
 
     while (numChanged > 0 || examineAll) {
+
+      println(s"main loop: numChanged: $numChanged  and examineAll: $examineAll")
 
       numChanged = 0
 

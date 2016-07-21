@@ -12,7 +12,7 @@ class SanityCheckSmoTest extends FunSuite {
 
   import SmoHelpers.Kernels._
   import SanityCheckSmoTest._
-  import SequentialMinimalOptimization.predict
+  import SequentialMinimalOptimization.{ calcMarginDist, onSameSide }
 
   test("Should memorize on tiny, toy data") {
 
@@ -26,20 +26,30 @@ class SanityCheckSmoTest extends FunSuite {
         data = dataToy
       )
     }
-    val predictOn = predict(svm)
+    val predictOn = calcMarginDist(svm)
 
     println(
       s"[Toy] Training using SMO on ${dataToy.size} 2-D examples took ${trainingTime.toMicros} microseconds"
     )
 
-    dataToy foreach {
-      case (vec, target) =>
-        val predicted = predictOn(vec)
-        assert(
-          target === predicted,
-          s"Expecting target: $target to equal predicted: $predicted"
-        )
-    }
+    val incorrectResults =
+      dataToy
+        .map {
+          case (vec, target) =>
+            val predicted = predictOn(vec)
+            (
+              onSameSide(target, predicted),
+              s"Expecting target: $target to equal predicted: $predicted"
+            )
+        }
+        .filter { case (isCorrect, _) => !isCorrect }
+
+    assert(
+      incorrectResults.isEmpty,
+      s"""Failed on ${incorrectResults.size} out of ${dataToy.size} examples:
+         |${"\t"}${incorrectResults.map { _._2 }.mkString("\n\t")}
+       """.stripMargin
+    )
   }
 
 }
