@@ -9,7 +9,7 @@ import Kernels._
 import spire.syntax.cfor._
 
 import scala.concurrent.duration.Duration
-import scala.util.Random
+import scala.util.{ Random, Try }
 
 object BenchmarkTimingsM extends App {
 
@@ -21,7 +21,12 @@ object BenchmarkTimingsM extends App {
     )
   ) _
 
-  val (nVec, dimensonality, spread) = (100, 20, 500)
+  val (nVec, dimensonality, spread) = (
+    Try(args.head.toInt).toOption.getOrElse(1000),
+    Try(args(1).toInt).toOption.getOrElse(100),
+    Try(args(2).toInt).toOption.getOrElse(500)
+  )
+
   println(s"Creating benchmark data ($nVec vectors, $dimensonality length each)")
 
   val (randoData, dataCreationTime) = time {
@@ -36,13 +41,19 @@ object BenchmarkTimingsM extends App {
       (x, y)
     }
   }
-  println(s"Done creating benchmark data, took ${dataCreationTime.toSeconds} seconds")
+  println(
+    s"Done creating benchmark data, took ${dataCreationTime.toSeconds} seconds"
+  )
 
   // crappy JIT warmup sequence ...
-  cfor(0)(_ < 5, _ + 1) { _ =>
-    val _ = smoSolver(randoData)
+  val (_, jitWarmupTime) = time {
+    cfor(0)(_ < 5, _ + 1) { _ =>
+      val _ = smoSolver(randoData)
+    }
   }
-  println(s"benchmark: JIT warmup sequence complete")
+  println(
+    s"benchmark: JIT warmup sequence complete, took ${jitWarmupTime.toSeconds} seconds"
+  )
 
   // do timing tests
   val nTest = 5
@@ -72,7 +83,7 @@ object BenchmarkTimingsM extends App {
   }
 
   println(
-    s"Took an average of ${asDurationAvg.toSeconds} +/- ${stdDev.toSeconds} seconds for $nTest runs on $nVec examples of $dimensonality length each"
+    s"Took an average of ${asDurationAvg.toMillis} +/- ${stdDev.toMillis} ms (~ ${asDurationAvg.toSeconds} seconds) for $nTest runs on $nVec examples of $dimensonality length each"
   )
 
 }
