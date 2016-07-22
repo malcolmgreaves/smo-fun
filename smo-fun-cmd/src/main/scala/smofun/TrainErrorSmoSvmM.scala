@@ -11,9 +11,12 @@ import scala.io.Source
 
 object TrainErrorSmoSvmM extends App {
 
+  lazy val whitespaceSplit: String => Seq[String] =
+    _.split("\\s+").toSeq
+
   lazy val parseSvmLightFmt: String => (Vec, Target) =
     line => {
-      val bits = line.split(" ")
+      val bits = whitespaceSplit(line)
       val target = bits.head.toInt
       val (fv, _) = bits.slice(1, bits.length)
         .map { b =>
