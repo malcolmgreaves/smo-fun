@@ -79,8 +79,9 @@ object BenchmarkTimingsM extends App {
   val nTest = 3
   val trainingTimes =
     (0 until nTest)
-      .map { _ =>
+      .map { iter =>
         val (_, trainingTime) = time { smoSolver(randoData) }
+        println(s"Finished iteration # ${iter + 1} in $trainingTime")
         trainingTime
       }
 
