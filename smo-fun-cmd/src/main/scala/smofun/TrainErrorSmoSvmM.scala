@@ -1,17 +1,13 @@
 package smofun
 
-import java.io.{ BufferedWriter, File, FileWriter }
-import java.util.concurrent.TimeUnit
+import java.io.File
 
 import breeze.linalg.DenseVector
 import smofun.SequentialMinimalOptimization._
 import smofun.SmoHelpers.Kernels._
 import smofun.SmoHelpers._
-import spire.syntax.cfor._
 
-import scala.concurrent.duration.Duration
 import scala.io.Source
-import scala.util.{ Random, Try }
 
 object TrainErrorSmoSvmM extends App {
 
@@ -40,6 +36,7 @@ object TrainErrorSmoSvmM extends App {
             )
         }
 
+      (DenseVector(fv.toArray), target)
     }
 
   val smoSolver = SequentialMinimalOptimization.train(
@@ -56,7 +53,34 @@ object TrainErrorSmoSvmM extends App {
     Source
       .fromFile(new File("./data/diabetes"))
       .getLines()
-      .map { line =>
-      }
+      .map { parseSvmLightFmt }
+      .toSeq
+
+  val dimensionality = {
+
+    val labels = data.map { _._2 }.toSet
+    if (labels.size != 2)
+      throw new IllegalStateException(
+        s"Expecting binary labeled data, actually have ${labels.size} labels!!\n\n$labels\n"
+      )
+
+    val vecSizes = data.map { _._1.length }.toSet
+    if (vecSizes.size == 1)
+      vecSizes.head
+    else
+      throw new IllegalStateException(
+        s"Each vector must have the same size, found ${vecSizes.size} difference size!!\n\n$vecSizes\n"
+      )
+  }
+
+  println(
+    s"Training on ${data.size} vectors, each of length $dimensionality"
+  )
+
+  val (svm, duration) = time { smoSolver(data) }
+
+  println(
+    s"Finished training in ${duration.toSeconds} seconds"
+  )
 
 }
