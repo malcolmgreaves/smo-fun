@@ -321,9 +321,9 @@ object SequentialMinimalOptimization {
       } else {
 
         val nonBoundExamples = calculateNonBoundExamples()
-
         cfor(0)(_ < nonBoundExamples.length, _ + 1) { i =>
-          numChanged += examineExample(i)
+          val indexToExamine = nonBoundExamples(i)
+          numChanged += examineExample(indexToExamine)
         }
       }
       //
