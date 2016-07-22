@@ -26,7 +26,7 @@ object SequentialMinimalOptimization {
       cfor(0)(_ < size, _ + 1) { i =>
         val a = alphas(i)
 
-        if (0.0 < a && a < C) {
+        if(a != 0.0 && a != C) {
           x.append(i)
         }
       }
