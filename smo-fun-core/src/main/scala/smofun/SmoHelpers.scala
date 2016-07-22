@@ -2,12 +2,72 @@ package smofun
 
 import java.util.concurrent.TimeUnit
 
+import breeze.linalg.DenseVector
 import spire.syntax.cfor._
 
 import scala.concurrent.duration.Duration
 import scala.util.Random
 
 object SmoHelpers {
+
+  type Vec = DenseVector[Double]
+  type Target = Double
+
+  type Kernel = (Vec, Vec) => Target
+
+  @inline def randomExample(sz: Int, shouldNotBeEqualTo: Int): Int =
+    if (sz <= 0)
+      throw new IllegalArgumentException(
+        "Size must be greater than 0, otherwise we'll loop forever!"
+      )
+
+    else if (sz == 1)
+      0
+
+    else {
+      var i = Random.nextInt(sz)
+      while (i == shouldNotBeEqualTo) {
+        i = Random.nextInt(sz)
+      }
+      i
+    }
+
+  case class SvmConfig(
+    C: Double,
+    tolerance: Double,
+    K: Kernel
+  )
+
+  case class SvmDualModel(
+      alphas: IndexedSeq[Double],
+      targets: IndexedSeq[Double],
+      vectors: IndexedSeq[Vec],
+      b: Double,
+      K: Kernel
+  ) {
+    assert(alphas.size == targets.size)
+    assert(targets.size == vectors.size)
+    val size = alphas.size
+  }
+
+  type BinaryClassifier = Vec => Boolean
+
+  lazy val calcMarginDist: SvmDualModel => Vec => Target = {
+    case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
+      val size = m.size
+      input => {
+        var sum = 0.0
+        cfor(0)(_ < size, _ + 1) { i =>
+          sum += kernel(vectors(i), input) * targets(i) * alphas(i)
+        }
+        sum -= b
+        ///
+        sum
+      }
+  }
+
+  lazy val onSameSide: (Target, Target) => Boolean =
+    (y1, y2) => y1 > 0.0 && y2 > 0.0
 
   object Initialize {
 
@@ -42,8 +102,6 @@ object SmoHelpers {
   }
 
   object Kernels {
-
-    import SequentialMinimalOptimization.Kernel
 
     lazy val linear: Kernel = (v1, v2) => v1.dot(v2)
 

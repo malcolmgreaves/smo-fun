@@ -11,73 +11,10 @@ object SequentialMinimalOptimization {
 
   import SmoHelpers._
 
-  type Vec = DenseVector[Double]
-  type Target = Double
-
-  type Kernel = (Vec, Vec) => Target
-
-  @inline def randomExample(sz: Int, notEqualTo: Int): Int =
-    if (sz == 0)
-      throw new IllegalArgumentException("Size must be greater than 0, otherwise we'll loop forever!")
-
-    else if (sz == 1)
-      0
-
-    else {
-      var i = Random.nextInt(sz)
-      while (i == notEqualTo) {
-        i = Random.nextInt(sz)
-      }
-      i
-    }
-
-  case class SvmConfig(
-    C: Double,
-    tolerance: Double,
-    K: Kernel
-  )
-
-  case class SvmDualModel(
-      alphas: IndexedSeq[Double],
-      targets: IndexedSeq[Double],
-      vectors: IndexedSeq[Vec],
-      b: Double,
-      K: Kernel
-  ) {
-    assert(alphas.size == targets.size)
-    assert(targets.size == vectors.size)
-    val size = alphas.size
-  }
-
-  type BinaryClassifier = Vec => Boolean
-
-  lazy val calcMarginDist: SvmDualModel => Vec => Target = {
-    case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
-      val size = m.size
-      input => {
-        var sum = 0.0
-        cfor(0)(_ < size, _ + 1) { i =>
-          sum += kernel(vectors(i), input) * targets(i) * alphas(i)
-        }
-        sum -= b
-        ///
-        sum
-      }
-  }
-
-  lazy val onSameSide: (Target, Target) => Boolean =
-    (y1, y2) => y1 > 0.0 && y2 > 0.0
-
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-
   def train(config: SvmConfig)(data: Seq[(Vec, Target)]): SvmDualModel = {
 
     import config._
 
-    val vecOnly = data.map { _._1 }
-    val targetOnly = data.map { _._2 }
     val size = data.size
     val halfSize = size / 2
     val alphas = Initialize.uniform(size)(Random.self)
@@ -102,7 +39,22 @@ object SequentialMinimalOptimization {
       x.result()
     }
 
+    val vecOnly = data.map { _._1 }.toIndexedSeq
+    val targetOnly = data.map { _._2 }.toIndexedSeq
     var b = 0.0
+
+    //    val kernelEvalCache: IndexedSeq[IndexedSeq[Double]] = {
+    //
+    //      val first = new Array[IndexedSeq[Double]](size)
+    //
+    //
+    //      cfor(0)(_ < size, _ + 1) { i =>
+    //
+    //      }
+    //
+    //
+    //      ???
+    //    }
 
     @inline def predict(index: Int): Target = {
       val input = vecOnly(index)
@@ -342,7 +294,11 @@ object SequentialMinimalOptimization {
       }
     }
 
+    System.gc()
+
+    //
     // MAIN LOOP --> heuristic for selecting alpha_1
+    //
 
     var numChanged = 0
     var examineAll = true

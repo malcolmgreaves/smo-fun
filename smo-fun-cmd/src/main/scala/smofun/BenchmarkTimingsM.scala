@@ -14,6 +14,9 @@ import scala.util.{ Random, Try }
 
 object BenchmarkTimingsM extends App {
 
+  import BenchmarkHelpers._
+  import fif.ImplicitCollectionsData._
+
   val smoSolver = SequentialMinimalOptimization.train(
     SvmConfig(
       C = 1.0,
@@ -85,23 +88,7 @@ object BenchmarkTimingsM extends App {
         trainingTime
       }
 
-  val sumTotalNanos = trainingTimes.map { _.toNanos }.sum
-
-  val asDurationAvg = Duration(sumTotalNanos / nTest, TimeUnit.NANOSECONDS)
-
-  val stdDev = {
-    val meanInNanos: Double = sumTotalNanos.toDouble / nTest.toDouble
-    val squaredDeviations =
-      trainingTimes
-        .map { _.toNanos }
-        .map { ns =>
-          val diff = meanInNanos - ns
-          diff * diff
-        }
-    val avgSqDev = squaredDeviations.sum / squaredDeviations.size.toDouble
-
-    Duration(math.sqrt(avgSqDev), TimeUnit.NANOSECONDS)
-  }
+  val (asDurationAvg, stdDev) = timingStats[Seq](trainingTimes)
 
   println(
     s"Took an average of ${asDurationAvg.toMillis} +/- ${stdDev.toMillis} ms (~ ${asDurationAvg.toSeconds} seconds) for $nTest runs on $nVec examples of $dimensonality length each"
