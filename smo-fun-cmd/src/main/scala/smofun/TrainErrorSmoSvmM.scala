@@ -8,6 +8,7 @@ import smofun.SmoHelpers.Kernels._
 import smofun.SmoHelpers._
 
 import scala.io.Source
+import scala.util.Try
 
 object TrainErrorSmoSvmM extends App {
 
@@ -50,11 +51,17 @@ object TrainErrorSmoSvmM extends App {
     )
   ) _
 
+  //////////////
+
+  val loc = {
+    new File(Try(args.head).getOrElse("./data/diabetes"))
+  }
+
   import SequentialMinimalOptimization._
 
   val data: Seq[(Vec, Target)] =
     Source
-      .fromFile(new File("./data/diabetes"))
+      .fromFile(loc)
       .getLines()
       .map { parseSvmLightFmt }
       .toSeq
