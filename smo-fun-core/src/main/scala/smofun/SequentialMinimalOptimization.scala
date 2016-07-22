@@ -77,7 +77,14 @@ object SequentialMinimalOptimization {
       sum
     }
 
-    val errorCache = new Array[Double](size)
+    val errorCache = {
+      // initialize the error cache
+      val e = new Array[Double](size)
+      cfor(0)(_ < size, _ +1 ) { i =>
+        e(i) = predict(i) - targetOnly(i)
+      }
+      e
+    }
 
     def takeStep(i1: Int, i2: Int): Boolean =
       if (i1 == i2) {
