@@ -26,7 +26,7 @@ object SequentialMinimalOptimization {
       cfor(0)(_ < size, _ + 1) { i =>
         val a = alphas(i)
 
-        if(a != 0.0 && a != C) {
+        if (a != 0.0 && a != C) {
           x.append(i)
         }
       }
@@ -339,10 +339,46 @@ object SequentialMinimalOptimization {
 
     // finished training, output model information
 
+    val (nonZeroAlphas, targetsForNZA, vectorsForNZA) = {
+
+      val inidicesOfNonZeroAlphas: Seq[Int] =
+        alphas
+          .data
+          .toSeq
+          .zipWithIndex
+          .filter { case (a, _) => a != 0.0 }
+          .map { case (_, nonZeroAlphaIndex) => nonZeroAlphaIndex }
+
+      val (alphaNZ, t4NZA, v4NZA) = (
+        new Array[Double](inidicesOfNonZeroAlphas.size),
+        new Array[Double](inidicesOfNonZeroAlphas.size),
+        new Array[Vec](inidicesOfNonZeroAlphas.size)
+      )
+
+      inidicesOfNonZeroAlphas
+        .zipWithIndex
+        .foreach {
+          case (indexForNonZeroAlpha, indexForNewArrays) =>
+
+            alphaNZ(indexForNonZeroAlpha) = alphas(indexForNewArrays)
+            t4NZA(indexForNonZeroAlpha) = targetOnly(indexForNewArrays)
+            v4NZA(indexForNonZeroAlpha) = vecOnly(indexForNewArrays)
+        }
+
+      cfor(0)(_ < alphaNZ.length, _ + 1) { i =>
+
+        val indexForNonZeroAlpha = inidicesOfNonZeroAlphas
+
+        alphaNZ(i) = alphas()
+      }
+
+      (alphaNZ.toIndexedSeq, t4NZA.toIndexedSeq, v4NZA.toIndexedSeq)
+    }
+
     SvmDualModel(
-      alphas = alphas.data.toIndexedSeq,
-      targets = targetOnly.data.toIndexedSeq,
-      vectors = vecOnly.toIndexedSeq,
+      alphas = nonZeroAlphas, //alphas.data.toIndexedSeq,
+      targets = targetsForNZA, //targetOnly.data.toIndexedSeq,
+      vectors = vectorsForNZA, //vecOnly.toIndexedSeq,
       b = b,
       K = K
     )

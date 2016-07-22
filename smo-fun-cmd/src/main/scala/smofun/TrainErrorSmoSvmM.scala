@@ -92,7 +92,7 @@ object TrainErrorSmoSvmM extends App {
   val (svm, duration) = time { smoSolver(data) }
 
   println(
-    s"Finished training in ${duration.toSeconds} seconds"
+    s"Finished training in ${duration.toSeconds} seconds. Found ${svm.size} support vectors."
   )
 
 }
