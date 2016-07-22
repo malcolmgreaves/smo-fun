@@ -57,6 +57,8 @@ object TrainErrorSmoSvmM extends App {
     new File(Try(args.head).getOrElse("./data/diabetes"))
   }
 
+  println(s"Using training data from: $loc")
+
   import SequentialMinimalOptimization._
 
   val data: Seq[(Vec, Target)] =
