@@ -11,7 +11,7 @@ import spire.syntax.cfor._
 import scala.concurrent.duration.Duration
 import scala.util.{ Random, Try }
 
-object BenchmarkCforVsWhileM extends App {
+object BenchmarkLooping extends App {
 
   import BenchmarkHelpers._
   import fif.ImplicitCollectionsData._
@@ -31,35 +31,40 @@ object BenchmarkCforVsWhileM extends App {
   {
     print("JIT warmup...")
     val jitSize = 5000
+    // cfor
     cfor(0)(_ < jitSize, _ + 1) { i =>
       val _ = simpleMultOp()
     }
+    // while
     var i = 0
     while (i < jitSize) {
       val _ = simpleMultOp()
       i += 1
     }
+    // foreach
+    (0 until jitSize).foreach { _ =>
+      val _ = simpleMultOp()
+    }
     println("done")
   }
-  /////////////////
 
   /////////////////
+
   {
     println(s"Running while loop timings...")
     val whileLoopTimings =
-      (0 until nTimes)
-        .map { _ =>
-          val (_, duration) = time {
-            var s = 0.0
-            var i = 0
-            while (i < size) {
-              s += simpleMultOp()
-              i += 1
-            }
-            s
+      (0 until nTimes).map { _ =>
+        val (_, duration) = time {
+          var s = 0.0
+          var i = 0
+          while (i < size) {
+            s += simpleMultOp()
+            i += 1
           }
-          duration
+          s
         }
+        duration
+      }
 
     println(
       timingStatsToStr(
@@ -68,23 +73,22 @@ object BenchmarkCforVsWhileM extends App {
       )
     )
   }
-  /////////////////
 
   /////////////////
+
   {
     println(s"Running cfor timings...")
     val cforTimings =
-      (0 until nTimes)
-        .map { _ =>
-          val (_, duration) = time {
-            var s = 0.0
-            cfor(0)(_ < size, _ + 1) { _ =>
-              s += simpleMultOp()
-            }
-            s
+      (0 until nTimes).map { _ =>
+        val (_, duration) = time {
+          var s = 0.0
+          cfor(0)(_ < size, _ + 1) { _ =>
+            s += simpleMultOp()
           }
-          duration
+          s
         }
+        duration
+      }
 
     println(
       timingStatsToStr(
@@ -93,6 +97,29 @@ object BenchmarkCforVsWhileM extends App {
       )
     )
   }
+
   /////////////////
+
+  {
+    println(s"Running foreach timings...")
+    val foreachTimings =
+      (0 until nTimes).map { _ =>
+        val (_, duration) = time {
+          var s = 0.0
+          (0l until size).foreach { _ =>
+            s += simpleMultOp()
+          }
+          s
+        }
+        duration
+      }
+
+    println(
+      timingStatsToStr(
+        timingStats[Traversable](foreachTimings),
+        "foreach"
+      )
+    )
+  }
 
 }
