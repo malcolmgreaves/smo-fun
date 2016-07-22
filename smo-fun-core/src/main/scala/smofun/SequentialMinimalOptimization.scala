@@ -1,6 +1,6 @@
 package smofun
 
-import breeze.linalg.DenseVector
+import breeze.linalg.{ DenseMatrix, DenseVector }
 import spire.syntax.cfor._
 
 import scala.collection.mutable
@@ -16,71 +16,49 @@ object SequentialMinimalOptimization {
     import config._
 
     val size = data.size
-    val halfSize = size / 2
-    val alphas = Initialize.uniform(size)(Random.self)
+    val alphas = DenseVector[Double](Initialize.uniform(size)(Random.self))
 
     /** Non-bound example means its alpha is NOT ZERO and NOT C. */
     @inline def calculateNonBoundExamples(): Array[Int] = {
 
-      val x = mutable.ArrayBuilder.make[Int]()
-      x.sizeHint(halfSize)
+      val x = new mutable.ArrayBuffer[Int]()
 
       cfor(0)(_ < size, _ + 1) { i =>
         val a = alphas(i)
 
-        val alphaIsNonZero = a > 0.0 || a < 0.0
-        val alphaIsNotC = a != C
-
-        if (alphaIsNonZero && alphaIsNotC) {
-          val _ = x += i
+        if (0.0 < a && a < C) {
+          x.append(i)
         }
       }
-
-      x.result()
+      x.toArray[Int]
     }
 
     val vecOnly = data.map { _._1 }.toIndexedSeq
-    val targetOnly = data.map { _._2 }.toIndexedSeq
+    val targetOnly = DenseVector[Double](data.map { _._2 }.toArray)
     var b = 0.0
 
-    val kernelEvalCache: IndexedSeq[IndexedSeq[Double]] = {
+    val kernelEvalCache: DenseMatrix[Target] = {
 
-      val first = new Array[IndexedSeq[Double]](size)
+      val m = DenseMatrix.zeros[Double](size, size)
 
       cfor(0)(_ < size, _ + 1) { i =>
-
-        val second = new Array[Double](size)
         cfor(0)(_ < size, _ + 1) { j =>
-          second(j) = K(vecOnly(i), vecOnly(j))
+          m(i, j) = K(vecOnly(i), vecOnly(j))
         }
-
-        first(i) = second
       }
 
-      first.toIndexedSeq
+      m
     }
 
     @inline def predict(index: Int): Target = {
-      //      val input = vecOnly(index)
-      var sum = 0.0
-      cfor(0)(_ < size, _ + 1) { i =>
-
-
-        // TODO [mg] need a check here? does it make sense to predict against itself?
-        if(alphas(i) != 0.0 && i != index) {
-          //          sum += K(vecOnly(i), input) * targetOnly(i) * alphas(i)
-          sum += kernelEvalCache(i)(index) * targetOnly(i) * alphas(i)
-        }
-      }
-      sum -= b
-      ///
-      sum
+      val sum: Double = kernelEvalCache(::, index) dot (targetOnly :* alphas)
+      sum - b
     }
 
-    val errorCache = {
+    val errorCache: DenseVector[Double] = {
       // initialize the error cache
-      val e = new Array[Double](size)
-      cfor(0)(_ < size, _ +1 ) { i =>
+      val e = DenseVector.zeros[Double](size)
+      cfor(0)(_ < size, _ + 1) { i =>
         e(i) = predict(i) - targetOnly(i)
       }
       e
@@ -121,12 +99,10 @@ object SequentialMinimalOptimization {
 
           val (k11, k12, k22) = {
             (
-              kernelEvalCache(i1)(i1),
-              kernelEvalCache(i1)(i2),
-              kernelEvalCache(i2)(i2)
+              kernelEvalCache(i1, i1),
+              kernelEvalCache(i1, i2),
+              kernelEvalCache(i2, i2)
             )
-            //            val (v1, v2) = (vecOnly(i1), vecOnly(i2))
-            //            (K(v1, v1), K(v1, v2), K(v2, v2))
           }
 
           val eta = k11 + k22 - 2.0 * k12
@@ -290,10 +266,19 @@ object SequentialMinimalOptimization {
               val randomIndex = randomExample(size, index)
 
               var changedAnAlpha = false
+              var nonBoundIndex = 0
               cfor(0)(_ < size && !changedAnAlpha, _ + 1) { i =>
                 val nextIndex = (randomIndex + i) % size
-                if (nextIndex != index) {
+
+                val indexOfANonBoundExample = nonBoundExamples(nonBoundIndex)
+
+                if (nextIndex != indexOfANonBoundExample && nextIndex != index) {
                   changedAnAlpha = takeStep(nextIndex, index)
+
+                } else {
+                  // we've already tried to take a step at `nextIndex`
+                  // so let's not do it again!
+                  nonBoundIndex += 1
                 }
               }
 
@@ -355,8 +340,8 @@ object SequentialMinimalOptimization {
     // finished training, output model information
 
     SvmDualModel(
-      alphas = alphas.toIndexedSeq,
-      targets = targetOnly.toIndexedSeq,
+      alphas = alphas.data.toIndexedSeq,
+      targets = targetOnly.data.toIndexedSeq,
       vectors = vecOnly.toIndexedSeq,
       b = b,
       K = K
