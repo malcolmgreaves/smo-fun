@@ -15,6 +15,10 @@ object SmoHelpers {
 
   type Kernel = (Vec, Vec) => Target
 
+  type CacheKernelEval = (Int, Int) => Target
+
+  //  lazy val createKernelCache: Seq[(Vec, Target)] => CacheKernelEval = ???
+
   @inline def randomExample(sz: Int, shouldNotBeEqualTo: Int): Int =
     if (sz <= 0)
       throw new IllegalArgumentException(

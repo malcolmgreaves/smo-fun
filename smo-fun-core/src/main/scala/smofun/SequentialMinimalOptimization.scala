@@ -43,26 +43,31 @@ object SequentialMinimalOptimization {
     val targetOnly = data.map { _._2 }.toIndexedSeq
     var b = 0.0
 
-    //    val kernelEvalCache: IndexedSeq[IndexedSeq[Double]] = {
-    //
-    //      val first = new Array[IndexedSeq[Double]](size)
-    //
-    //
-    //      cfor(0)(_ < size, _ + 1) { i =>
-    //
-    //      }
-    //
-    //
-    //      ???
-    //    }
+    val kernelEvalCache: IndexedSeq[IndexedSeq[Double]] = {
+
+      val first = new Array[IndexedSeq[Double]](size)
+
+      cfor(0)(_ < size, _ + 1) { i =>
+
+        val second = new Array[Double](size)
+        cfor(0)(_ < size, _ + 1) { j =>
+          second(j) = K(vecOnly(i), vecOnly(j))
+        }
+
+        first(i) = second
+      }
+
+      first.toIndexedSeq
+    }
 
     @inline def predict(index: Int): Target = {
-      val input = vecOnly(index)
+      //      val input = vecOnly(index)
       var sum = 0.0
       cfor(0)(_ < size, _ + 1) { i =>
         // TODO [mg] need a check here? does it make sense to predict against itself?
         if (i != index) {
-          sum += K(vecOnly(i), input) * targetOnly(i) * alphas(i)
+          //          sum += K(vecOnly(i), input) * targetOnly(i) * alphas(i)
+          sum += kernelEvalCache(i)(index) * targetOnly(i) * alphas(i)
         }
       }
       sum -= b
@@ -106,8 +111,13 @@ object SequentialMinimalOptimization {
         } else {
 
           val (k11, k12, k22) = {
-            val (v1, v2) = (vecOnly(i1), vecOnly(i2))
-            (K(v1, v1), K(v1, v2), K(v2, v2))
+            (
+              kernelEvalCache(i1)(i1),
+              kernelEvalCache(i1)(i2),
+              kernelEvalCache(i2)(i2)
+            )
+            //            val (v1, v2) = (vecOnly(i1), vecOnly(i2))
+            //            (K(v1, v1), K(v1, v2), K(v2, v2))
           }
 
           val eta = k11 + k22 - 2.0 * k12
