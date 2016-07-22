@@ -64,8 +64,10 @@ object SequentialMinimalOptimization {
       //      val input = vecOnly(index)
       var sum = 0.0
       cfor(0)(_ < size, _ + 1) { i =>
+
+
         // TODO [mg] need a check here? does it make sense to predict against itself?
-        if (i != index) {
+        if(alphas(i) != 0.0 && i != index) {
           //          sum += K(vecOnly(i), input) * targetOnly(i) * alphas(i)
           sum += kernelEvalCache(i)(index) * targetOnly(i) * alphas(i)
         }
