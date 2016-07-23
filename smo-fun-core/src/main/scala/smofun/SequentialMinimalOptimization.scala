@@ -72,11 +72,11 @@ object SequentialMinimalOptimization {
 
         val alph1 = alphas(i1)
         val y1 = targetOnly(i1)
-        val e1 = predict(i1) - y1
+        val e1 = errorCache(i1) //predict(i1) - y1
 
         val alph2 = alphas(i2)
         val y2 = targetOnly(i2)
-        val e2 = predict(i2) - y2
+        val e2 = errorCache(i2) //predict(i2) - y2
 
         val s = y1 * y2
 
@@ -186,7 +186,7 @@ object SequentialMinimalOptimization {
 
       val y2 = targetOnly(index)
       val alph2 = alphas(index)
-      val e2 = predict(index) - y2
+      val e2 = errorCache(index) //predict(index) - y2
       val r2 = e2 * y2
 
       if ((r2 < -tolerance && alph2 < C) || (r2 > tolerance && alph2 > 0.0)) {
@@ -261,7 +261,7 @@ object SequentialMinimalOptimization {
             if (nextHeuristicChangedAnAlpha) {
               1
 
-            } else {
+            } else if (config.doFullAlphaSearch) {
               // 2nd tier, second choice heuristics: option #2
               val randomIndex = randomExample(size, index)
 
@@ -292,6 +292,9 @@ object SequentialMinimalOptimization {
               } else {
                 0
               }
+
+            } else {
+              0
             }
           }
         } else {

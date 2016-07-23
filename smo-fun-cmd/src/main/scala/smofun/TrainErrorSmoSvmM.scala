@@ -15,13 +15,14 @@ object TrainErrorSmoSvmM extends App {
 
   import SvmLightHelpers._
 
-  val smoSolver = SequentialMinimalOptimization.train(
-    SvmConfig(
-      C = 1.0,
-      tolerance = 0.001,
-      K = gaussian(1.0)
-    )
-  ) _
+  val conf = SvmConfig(
+    C = 1.0,
+    tolerance = 0.001,
+    K = gaussian(1.0),
+    doFullAlphaSearch = false
+  )
+
+  val smoSolver = SequentialMinimalOptimization.train(conf) _
 
   //////////////
 
@@ -44,7 +45,10 @@ object TrainErrorSmoSvmM extends App {
       .toSeq
 
   println(
-    s"Training on ${data.size} vectors, each of length $dimensionality"
+    s"""Training on ${data.size} vectors, each of length $dimensionality
+       |Using the following SVM training configuration:
+       |$conf
+     """.stripMargin
   )
 
   val (svm, duration) = time { smoSolver(data) }
