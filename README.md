@@ -1,10 +1,7 @@
 # smo-fun
 AN efficient, functional implementation of the Sequential Minimal Optimization (SMO) algorithm for training Support Vector Machines (SVMs).
 
-
 **WARNING** This project is a _work in progress_ and is not yet stable.
-It is undergoing active, radpid development: it is not stable. See the "WIP" section for progress, notes.
-
 
 # Project Structure
 
