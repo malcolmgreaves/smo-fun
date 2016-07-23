@@ -351,23 +351,21 @@ object SequentialMinimalOptimization {
           .toSeq
           .zipWithIndex
           .filter { case (a, _) => !isZero(a) }
-          .map { case (_, nonZeroAlphaIndex) => nonZeroAlphaIndex }
+          .map { case (_, index) => index }
 
-      val (alphaNZ, t4NZA, v4NZA) = (
-        new Array[Double](inidicesOfNonZeroAlphas.size),
-        new Array[Double](inidicesOfNonZeroAlphas.size),
-        new Array[Vec](inidicesOfNonZeroAlphas.size)
-      )
+      val (alphaNZ, t4NZA, v4NZA) = {
+        val s = inidicesOfNonZeroAlphas.size
+        (new Array[Double](s), new Array[Double](s), new Array[Vec](s))
+      }
 
-      inidicesOfNonZeroAlphas
-        .zipWithIndex
-        .foreach {
-          case (indexForNonZeroAlpha, indexForNewArrays) =>
+      cfor(0)(_ < inidicesOfNonZeroAlphas.size, _ + 1) { i =>
 
-            alphaNZ(indexForNonZeroAlpha) = alphas(indexForNewArrays)
-            t4NZA(indexForNonZeroAlpha) = targetOnly(indexForNewArrays)
-            v4NZA(indexForNonZeroAlpha) = vecOnly(indexForNewArrays)
-        }
+        val indexOfSupportVector = inidicesOfNonZeroAlphas(i)
+
+        alphaNZ(i) = alphas(indexOfSupportVector)
+        t4NZA(i) = targetOnly(indexOfSupportVector)
+        v4NZA(i) = vecOnly(indexOfSupportVector)
+      }
 
       (alphaNZ.toIndexedSeq, t4NZA.toIndexedSeq, v4NZA.toIndexedSeq)
     }

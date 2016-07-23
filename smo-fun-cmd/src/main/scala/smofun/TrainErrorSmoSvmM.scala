@@ -8,6 +8,7 @@ import smofun.SmoHelpers.Kernels._
 import smofun.SmoHelpers._
 
 import scala.io.Source
+import scala.language.postfixOps
 import scala.util.Try
 
 object TrainErrorSmoSvmM extends App {
@@ -83,9 +84,20 @@ object TrainErrorSmoSvmM extends App {
         s"Expecting binary labeled data, actually have ${labels.size} labels!!\n\n$labels\n"
       )
 
-    rawSparseData
-      .map { _._1.length }
-      .reduce[Int] { case (a, b) => math.max(a, b) }
+    val maxFeatIndexPerVec =
+      rawSparseData
+        .map {
+          case (fv, _) =>
+            val fIndicies = fv.map { case (fIndex, _) => fIndex }
+            if (fIndicies isEmpty)
+              0
+            else
+              fIndicies.max
+        }
+    if (maxFeatIndexPerVec isEmpty)
+      0
+    else
+      maxFeatIndexPerVec.max + 1
   }
 
   val data: Seq[(Vec, Target)] =
