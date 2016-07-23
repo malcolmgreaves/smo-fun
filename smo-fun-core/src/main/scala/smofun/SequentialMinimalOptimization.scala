@@ -270,7 +270,11 @@ object SequentialMinimalOptimization {
               cfor(0)(_ < size && !changedAnAlpha, _ + 1) { i =>
                 val nextIndex = (randomIndex + i) % size
 
-                val indexOfANonBoundExample = nonBoundExamples(nonBoundIndex)
+                val indexOfANonBoundExample =
+                  if (nonBoundIndex < nonBoundExamples.length)
+                    nonBoundExamples(nonBoundIndex)
+                  else
+                    -1
 
                 if (nextIndex != indexOfANonBoundExample && nextIndex != index) {
                   changedAnAlpha = takeStep(nextIndex, index)
