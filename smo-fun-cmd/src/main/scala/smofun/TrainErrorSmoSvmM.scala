@@ -18,7 +18,7 @@ object TrainErrorSmoSvmM extends App {
   lazy val parseSvmLightFmt: String => (Vec, Target) =
     line => {
       val bits = whitespaceSplit(line)
-      val target = bits.head.toInt
+      val target = bits.head.toDouble
       val (fv, _) = bits.slice(1, bits.length)
         .map { b =>
           val sbits = b.split(":")
