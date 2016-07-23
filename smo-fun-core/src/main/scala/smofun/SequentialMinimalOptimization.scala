@@ -26,7 +26,7 @@ object SequentialMinimalOptimization {
       cfor(0)(_ < size, _ + 1) { i =>
         val a = alphas(i)
 
-        if (a != 0.0 && a != C) {
+        if (!isZero(a) && !areEqual(a, C)) {
           x.append(i)
         }
       }
@@ -81,7 +81,7 @@ object SequentialMinimalOptimization {
         val s = y1 * y2
 
         val (l, h) =
-          if (y1 == y2)
+          if (areEqual(y1, y2))
             (
               math.max(0, alph2 + alph1 - C),
               math.min(C, alph2 + alph1)
@@ -92,7 +92,7 @@ object SequentialMinimalOptimization {
               math.min(C, C + alph2 - alph1)
             )
 
-        if (l == h) {
+        if (areEqual(l, h)) {
           false
 
         } else {
@@ -346,7 +346,7 @@ object SequentialMinimalOptimization {
           .data
           .toSeq
           .zipWithIndex
-          .filter { case (a, _) => a != 0.0 }
+          .filter { case (a, _) => !isZero(a) }
           .map { case (_, nonZeroAlphaIndex) => nonZeroAlphaIndex }
 
       val (alphaNZ, t4NZA, v4NZA) = (
@@ -364,13 +364,6 @@ object SequentialMinimalOptimization {
             t4NZA(indexForNonZeroAlpha) = targetOnly(indexForNewArrays)
             v4NZA(indexForNonZeroAlpha) = vecOnly(indexForNewArrays)
         }
-
-      cfor(0)(_ < alphaNZ.length, _ + 1) { i =>
-
-        val indexForNonZeroAlpha = inidicesOfNonZeroAlphas
-
-        alphaNZ(i) = alphas()
-      }
 
       (alphaNZ.toIndexedSeq, t4NZA.toIndexedSeq, v4NZA.toIndexedSeq)
     }
