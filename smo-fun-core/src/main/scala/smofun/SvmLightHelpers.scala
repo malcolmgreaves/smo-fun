@@ -58,7 +58,7 @@ object SvmLightHelpers {
               val maxInFvs = fvs.map { _._1 }.max
               math.max(maxSeen, maxInFvs)
             }
-        }
+        } + 1
     }
 
   lazy val parseSvmLightFmt: Dimensionality => String => (Vec, Target) =

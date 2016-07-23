@@ -54,7 +54,8 @@ object SmoHelpers {
   case class SvmConfig(
     C: Double,
     tolerance: Double,
-    K: Kernel
+    K: Kernel,
+    doFullAlphaSearch: Boolean = true
   )
 
   case class SvmDualModel(
