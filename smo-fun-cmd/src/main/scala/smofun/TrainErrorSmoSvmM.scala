@@ -13,8 +13,8 @@ import scala.util.Try
 
 object TrainErrorSmoSvmM extends App {
 
-  lazy val whitespaceSplit: String => Seq[String] =
-    _.split("\\s+").toSeq
+  import SvmLightHelpers._
+
 
   lazy val parseSvmLightFmt: String => (Seq[(Int, Double)], Target) =
     line => {
