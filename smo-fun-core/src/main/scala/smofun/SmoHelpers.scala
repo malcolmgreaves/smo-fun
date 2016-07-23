@@ -17,18 +17,18 @@ object SmoHelpers {
 
   type CacheKernelEval = (Int, Int) => Target
 
-  val defaultZeroCheckTol = 1e-8
+  val defaultDoubleEqualityTol = 1e-8
 
   @inline def areEqual(
     a: Target,
     b: Target,
-    tolerance: Double = defaultZeroCheckTol
+    tolerance: Double = defaultDoubleEqualityTol
   ): Boolean =
     math.abs(a - b) < tolerance
 
   @inline def isZero(
     y: Target,
-    tolerance: Double = defaultZeroCheckTol
+    tolerance: Double = defaultDoubleEqualityTol
   ): Boolean =
     math.abs(y) < tolerance
 
