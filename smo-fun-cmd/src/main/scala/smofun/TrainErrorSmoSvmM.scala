@@ -15,41 +15,6 @@ object TrainErrorSmoSvmM extends App {
 
   import SvmLightHelpers._
 
-  lazy val parseSvmLightFmt: String => (Seq[(Int, Double)], Target) =
-    line => {
-      val bits = whitespaceSplit(line)
-      val target = bits.head.toDouble
-      //      val (fv, _) = bits.slice(1, bits.length)
-      //        .map { b =>
-      //          val sbits = b.split(":")
-      //          val fIndex = sbits.head.toInt
-      //          val fValue = sbits(1).toDouble
-      //          (fIndex, fValue)
-      //        }
-      //        .foldLeft((Seq.empty[Double], 1)) {
-      //          case ((accum, lastIndexSeen), (fIndex, fValue)) =>
-      //            (
-      //              if (fIndex == lastIndexSeen + 1)
-      //                accum :+ fValue
-      //
-      //              else {
-      //                val filler = (lastIndexSeen until fIndex).map { _ => 0.0 }
-      //                (accum ++ filler) :+ fValue
-      //              },
-      //              fIndex
-      //            )
-      //        }
-      val fv = bits.slice(1, bits.length)
-        .map { b =>
-          val sbits = b.split(":")
-          val fIndex = sbits.head.toInt - 1
-          val fValue = sbits(1).toDouble
-          (fIndex, fValue)
-        }
-
-      (fv, target)
-    }
-
   val smoSolver = SequentialMinimalOptimization.train(
     SvmConfig(
       C = 1.0,
@@ -68,49 +33,18 @@ object TrainErrorSmoSvmM extends App {
 
   import SequentialMinimalOptimization._
 
-  val rawSparseData =
+  val dimensionality = calculateDimensionality(loc)
+  val parse = parseSvmLightFmt(dimensionality)
+
+  val data: Seq[(Vec, Target)] =
     Source
       .fromFile(loc)
       .getLines()
-      .map { parseSvmLightFmt }
+      .map { parse }
       .toSeq
 
-  val dimensionality = {
-
-    val labels = rawSparseData.map { _._2 }.toSet
-    if (labels.size != 2)
-      throw new IllegalStateException(
-        s"Expecting binary labeled data, actually have ${labels.size} labels!!\n\n$labels\n"
-      )
-
-    val maxFeatIndexPerVec =
-      rawSparseData
-        .map {
-          case (fv, _) =>
-            val fIndicies = fv.map { case (fIndex, _) => fIndex }
-            if (fIndicies isEmpty)
-              0
-            else
-              fIndicies.max
-        }
-    if (maxFeatIndexPerVec isEmpty)
-      0
-    else
-      maxFeatIndexPerVec.max + 1
-  }
-
-  val data: Seq[(Vec, Target)] =
-    rawSparseData
-      .map {
-        case (sv, target) =>
-          (
-            SparseVector(dimensionality)(sv: _*).toDenseVector,
-            target
-          )
-      }
-
   println(
-    s"Training on ${rawSparseData.size} vectors, each of length $dimensionality"
+    s"Training on ${data.size} vectors, each of length $dimensionality"
   )
 
   val (svm, duration) = time { smoSolver(data) }
