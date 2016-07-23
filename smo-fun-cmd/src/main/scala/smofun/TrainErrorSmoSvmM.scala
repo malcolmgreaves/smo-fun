@@ -2,7 +2,7 @@ package smofun
 
 import java.io.File
 
-import breeze.linalg.DenseVector
+import breeze.linalg.{ DenseVector, SparseVector }
 import smofun.SequentialMinimalOptimization._
 import smofun.SmoHelpers.Kernels._
 import smofun.SmoHelpers._
@@ -15,32 +15,39 @@ object TrainErrorSmoSvmM extends App {
   lazy val whitespaceSplit: String => Seq[String] =
     _.split("\\s+").toSeq
 
-  lazy val parseSvmLightFmt: String => (Vec, Target) =
+  lazy val parseSvmLightFmt: String => (Seq[(Int, Double)], Target) =
     line => {
       val bits = whitespaceSplit(line)
       val target = bits.head.toDouble
-      val (fv, _) = bits.slice(1, bits.length)
+      //      val (fv, _) = bits.slice(1, bits.length)
+      //        .map { b =>
+      //          val sbits = b.split(":")
+      //          val fIndex = sbits.head.toInt
+      //          val fValue = sbits(1).toDouble
+      //          (fIndex, fValue)
+      //        }
+      //        .foldLeft((Seq.empty[Double], 1)) {
+      //          case ((accum, lastIndexSeen), (fIndex, fValue)) =>
+      //            (
+      //              if (fIndex == lastIndexSeen + 1)
+      //                accum :+ fValue
+      //
+      //              else {
+      //                val filler = (lastIndexSeen until fIndex).map { _ => 0.0 }
+      //                (accum ++ filler) :+ fValue
+      //              },
+      //              fIndex
+      //            )
+      //        }
+      val fv = bits.slice(1, bits.length)
         .map { b =>
           val sbits = b.split(":")
           val fIndex = sbits.head.toInt
           val fValue = sbits(1).toDouble
           (fIndex, fValue)
         }
-        .foldLeft((Seq.empty[Double], 1)) {
-          case ((accum, lastIndexSeen), (fIndex, fValue)) =>
-            (
-              if (fIndex == lastIndexSeen + 1)
-                accum :+ fValue
 
-              else {
-                val filler = (lastIndexSeen until fIndex).map { _ => 0.0 }
-                (accum ++ filler) :+ fValue
-              },
-              fIndex
-            )
-        }
-
-      (DenseVector(fv.toArray), target)
+      (fv, target)
     }
 
   val smoSolver = SequentialMinimalOptimization.train(
@@ -61,7 +68,7 @@ object TrainErrorSmoSvmM extends App {
 
   import SequentialMinimalOptimization._
 
-  val data: Seq[(Vec, Target)] =
+  val rawSparseData =
     Source
       .fromFile(loc)
       .getLines()
@@ -70,23 +77,29 @@ object TrainErrorSmoSvmM extends App {
 
   val dimensionality = {
 
-    val labels = data.map { _._2 }.toSet
+    val labels = rawSparseData.map { _._2 }.toSet
     if (labels.size != 2)
       throw new IllegalStateException(
         s"Expecting binary labeled data, actually have ${labels.size} labels!!\n\n$labels\n"
       )
 
-    val vecSizes = data.map { _._1.length }.toSet
-    if (vecSizes.size == 1)
-      vecSizes.head
-    else
-      throw new IllegalStateException(
-        s"Each vector must have the same size, found ${vecSizes.size} difference size!!\n\n$vecSizes\n"
-      )
+    rawSparseData
+      .map { _._1.length }
+      .reduce[Int] { case (a, b) => math.max(a, b) }
   }
 
+  val data: Seq[(Vec, Target)] =
+    rawSparseData
+      .map {
+        case (sv, target) =>
+          (
+            SparseVector(dimensionality)(sv: _*).toDenseVector,
+            target
+          )
+      }
+
   println(
-    s"Training on ${data.size} vectors, each of length $dimensionality"
+    s"Training on ${rawSparseData.size} vectors, each of length $dimensionality"
   )
 
   val (svm, duration) = time { smoSolver(data) }
