@@ -15,7 +15,6 @@ object TrainErrorSmoSvmM extends App {
 
   import SvmLightHelpers._
 
-
   lazy val parseSvmLightFmt: String => (Seq[(Int, Double)], Target) =
     line => {
       val bits = whitespaceSplit(line)

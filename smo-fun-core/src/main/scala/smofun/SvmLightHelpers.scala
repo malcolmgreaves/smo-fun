@@ -3,16 +3,15 @@ package smofun
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-import breeze.linalg.DenseVector
+import breeze.linalg.{ DenseVector, SparseVector }
 import spire.syntax.cfor._
 
 import scala.concurrent.duration.Duration
 import scala.io.Source
 import scala.util.Random
-import scalaz.{@@, Tag}
+import scalaz.{ @@, Tag }
 
 object SvmLightHelpers {
-
 
   import SmoHelpers._
 
@@ -64,7 +63,10 @@ object SvmLightHelpers {
             (fIndex, fValue)
           }
 
-        (fv, target)
+        (
+          SparseVector(dims)(fv: _*).toDenseVector,
+          target
+        )
       }
     }
 
