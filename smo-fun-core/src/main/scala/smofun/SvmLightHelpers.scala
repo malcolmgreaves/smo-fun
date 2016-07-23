@@ -8,6 +8,7 @@ import spire.syntax.cfor._
 
 import scala.concurrent.duration.Duration
 import scala.io.Source
+import scala.language.postfixOps
 import scala.util.Random
 import scalaz.{ @@, Tag }
 
@@ -25,13 +26,20 @@ object SvmLightHelpers {
     line => {
       val bits = whitespaceSplit(line)
       val target = bits.head.toDouble
-      val fv = bits.slice(1, bits.length)
-        .map { b =>
-          val sbits = b.split(":")
-          val fIndex = sbits.head.toInt - 1
-          val fValue = sbits(1).toDouble
-          (fIndex, fValue)
-        }
+
+      val fv =
+        if (bits.length > 1) {
+          bits.slice(1, bits.length)
+            .map { b =>
+              val sbits = b.split(":")
+              val fIndex = sbits.head.toInt - 1
+              val fValue = sbits(1).toDouble
+              (fIndex, fValue)
+            }
+
+        } else
+          Seq.empty
+
       (target, fv)
     }
 
@@ -43,8 +51,13 @@ object SvmLightHelpers {
         .foldLeft(0) {
           case (maxSeen, line) =>
             val (_, fvs) = svmLightFmtSeparate(line)
-            val maxInFvs = fvs.map { _._1 }.max
-            math.max(maxSeen, maxInFvs)
+            if (fvs isEmpty)
+              maxSeen
+
+            else {
+              val maxInFvs = fvs.map { _._1 }.max
+              math.max(maxSeen, maxInFvs)
+            }
         }
     }
 
@@ -53,20 +66,13 @@ object SvmLightHelpers {
       val dims = Tag.unwrap(dimT)
 
       line => {
-        val bits = whitespaceSplit(line)
-        val target = bits.head.toDouble
-        val fv = bits.slice(1, bits.length)
-          .map { b =>
-            val sbits = b.split(":")
-            val fIndex = sbits.head.toInt - 1
-            val fValue = sbits(1).toDouble
-            (fIndex, fValue)
-          }
-
-        (
-          SparseVector(dims)(fv: _*).toDenseVector,
-          target
-        )
+        val (target, fv) = svmLightFmtSeparate(line)
+        val dv =
+          if (fv nonEmpty)
+            SparseVector(dims)(fv: _*).toDenseVector
+          else
+            DenseVector.zeros[Double](dims)
+        (dv, target)
       }
     }
 
