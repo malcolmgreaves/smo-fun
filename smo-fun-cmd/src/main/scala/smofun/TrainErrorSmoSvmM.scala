@@ -42,7 +42,7 @@ object TrainErrorSmoSvmM extends App {
       val fv = bits.slice(1, bits.length)
         .map { b =>
           val sbits = b.split(":")
-          val fIndex = sbits.head.toInt
+          val fIndex = sbits.head.toInt - 1
           val fValue = sbits(1).toDouble
           (fIndex, fValue)
         }
