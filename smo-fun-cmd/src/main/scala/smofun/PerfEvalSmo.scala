@@ -85,7 +85,7 @@ object PerfEvalSmo extends App {
   )
 
   val svm = {
-    val (svmModel, trainTime) = time { smoSolver(data) }
+    val (svmModel, trainTime) = time { smoSolver(train) }
 
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
