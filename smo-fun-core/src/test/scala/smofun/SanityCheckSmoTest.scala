@@ -73,7 +73,6 @@ object SanityCheckSmoTest {
     1d
   )
 
-  import SequentialMinimalOptimization.{ Vec, Target }
   lazy val dataToy: Seq[(Vec, Target)] = inputsToy.zip(targetsToy)
 
   assert(inputsToy.size == targetsToy.size)

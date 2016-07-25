@@ -72,6 +72,12 @@ object SmoHelpers {
 
   type BinaryClassifier = Vec => Boolean
 
+  lazy val svmClassifier: SvmDualModel => BinaryClassifier =
+    svm => {
+      val cm = calcMarginDist(svm)
+      input => cm(input) > 0.0
+    }
+
   lazy val calcMarginDist: SvmDualModel => Vec => Target = {
     case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
       val size = m.size
@@ -87,7 +93,7 @@ object SmoHelpers {
   }
 
   lazy val onSameSide: (Target, Target) => Boolean =
-    (y1, y2) => y1 > 0.0 && y2 > 0.0
+    (y1, y2) => (y1 > 0.0 && y2 > 0.0) || (y1 < 0.0 && y2 < 0.0)
 
   object Initialize {
 
