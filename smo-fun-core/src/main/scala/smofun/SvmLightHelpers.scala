@@ -1,6 +1,6 @@
 package smofun
 
-import java.io.File
+import java.io.{ BufferedWriter, File, FileWriter }
 import java.util.concurrent.TimeUnit
 
 import breeze.linalg.{ DenseVector, SparseVector }
@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
 import scala.io.Source
 import scala.language.postfixOps
 import scala.util.Random
-import scalaz.{ @@, Tag }
+import scalaz.{ @@, Tag, \/ }
 
 object SvmLightHelpers {
 
@@ -75,5 +75,24 @@ object SvmLightHelpers {
         (dv, target)
       }
     }
+
+  lazy val asSvmLightFmt: SvmDualModel => String = ???
+
+  lazy val fromSvmLightFmt: String => E[SvmDualModel] = ???
+
+  type E[T] = \/[Throwable, T]
+
+  lazy val writeModel: SvmDualModel => File => E[Unit] =
+    svm => fi => \/.fromTryCatchNonFatal {
+      val w = new BufferedWriter(new FileWriter(fi))
+      val s = asSvmLightFmt(svm)
+      w.write(s)
+      w.close()
+    }
+
+  lazy val readModel: File => E[SvmDualModel] =
+    fi => \/.fromTryCatchNonFatal {
+      Source.fromFile(fi).getLines().mkString("\n")
+    }.flatMap { fromSvmLightFmt }
 
 }
