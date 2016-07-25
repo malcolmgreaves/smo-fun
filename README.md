@@ -1,7 +1,5 @@
 # smo-fun
-AN efficient, functional implementation of the Sequential Minimal Optimization (SMO) algorithm for training Support Vector Machines (SVMs).
-
-**WARNING** This project is a _work in progress_ and is not yet stable.
+A efficient implementation of the Sequential Minimal Optimization (SMO) algorithm for training Support Vector Machines (SVMs). Exposes training behavior in a side-effect free, functional manner.
 
 # Project Structure
 
@@ -17,4 +15,4 @@ This repository is split into subprojects:
 
 # Legal
 
-The original author retains copyright over all material contained within this repository. Use of this code is governed under the terms of the Apache 2.0 open source software license. See the [LICENSE](./LICENSE) file for more details.
+The original author (Malcolm Greaves) retains copyright over all material contained within this repository. Use of this code is governed under the terms of the Apache 2.0 open source software license. See the [LICENSE](./LICENSE) file for more details.
