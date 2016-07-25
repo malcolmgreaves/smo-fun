@@ -155,10 +155,12 @@ object SmoHelpers {
     type Sigma = Double
     lazy val gaussian: Sigma => Kernel =
       sigma => {
-        val denominatorPreCompute = 2.0 * sigma * sigma
+        val denominatorPreCompute = -2.0 * sigma * sigma
         (v1, v2) => {
           val diff = v1 - v2
-          math.exp(-diff.dot(diff) / denominatorPreCompute)
+          math.exp(
+            math.sqrt(diff.dot(diff)) / denominatorPreCompute
+          )
         }
       }
 

@@ -61,9 +61,7 @@ object PredictSavedModelM extends App {
         .foldLeft(ConfusionMatrix.zero) {
           case (cm, (input, target)) =>
             val pTar = marginOf(input)
-            val prediction = pTar > 0.0
-            val targetIsTrue = target > 0.0
-            (targetIsTrue, prediction) match {
+            (target > 0.0, pTar > 0.0) match {
               case (true, true) => cm.copy(tp = cm.tp + 1)
               case (true, false) => cm.copy(fn = cm.fn + 1)
               case (false, true) => cm.copy(fp = cm.fp + 1)
@@ -81,13 +79,13 @@ object PredictSavedModelM extends App {
         |        +    |   -       <- [Predicted]
         |    -------------------
         | T  |  $tp   |  $fn   |
-          |-----------------------
+        |-----------------------
         | F  |  $fp   |  $tn   |
-          |    -------------------
+        |    -------------------
         |
-          | ^ [Actual]
+        | ^ [Actual]
         |
-          |Precision: ${precision * 100.0} %
+        |Precision: ${precision * 100.0} %
         |Recall:    ${recall * 100.0} %
         |F1:        ${f1 * 100.0} %
         |""".stripMargin
