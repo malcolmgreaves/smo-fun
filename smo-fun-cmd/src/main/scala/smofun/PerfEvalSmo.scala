@@ -14,7 +14,7 @@ object PerfEvalSmo extends App {
   import SvmLightHelpers._
 
   val conf = SvmConfig(
-    C = 0.99999,
+    C = 5.0,
     tolerance = 0.001,
     K = gaussian(1.5),
     doFullAlphaSearch = false
@@ -52,12 +52,26 @@ object PerfEvalSmo extends App {
       else
         pos.slice(0, neg.size) ++ neg
 
-  lazy val splitTrainTest = (prop: Double) => (xs: Seq[(Vec, Target)]) => {
+  lazy val splitProp = (prop: Double) => (xs: Seq[(Vec, Target)]) => {
     val splitIndx = (xs.size * prop).round.toInt
     (
       xs.slice(0, splitIndx),
       xs.slice(splitIndx, xs.size)
     )
+  }
+
+  lazy val splitTrainTest = (prop: Double) => {
+    val sp = splitProp(prop)
+    (xs: Seq[(Vec, Target)]) => {
+
+      val (pos, neg) = splitPosNeg(xs)
+      val (trainPos, testPos) = sp(pos)
+      val (trainNeg, testNeg) = sp(neg)
+      (
+        trainPos ++ trainNeg,
+        testPos ++ testNeg
+      )
+    }
   }
 
   val (train, test) = {
@@ -73,8 +87,8 @@ object PerfEvalSmo extends App {
     val trainProp = 0.75
     println(
       s"""${pos.size} + examples and ${neg.size} - examples
-         |Balanced size: ${balanced.size}
-         |Using ${trainProp * 100.0} % for training, rest for test.
+               |Balanced size: ${balanced.size}
+               |Using ${trainProp * 100.0} % for training, rest for test.
        """.stripMargin
     )
 
@@ -83,8 +97,8 @@ object PerfEvalSmo extends App {
 
   println(
     s"""Training on ${train.size} vectors, each of length $dimensionality
-       |Using the following SVM training configuration:
-       |$conf
+              |Using the following SVM training configuration:
+              |$conf
      """.stripMargin
   )
 
@@ -93,8 +107,8 @@ object PerfEvalSmo extends App {
 
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
-          |Found ${svmModel.size} support vectors.
-          |Now evaluating against ${test.size} examples.
+                |Found ${svmModel.size} support vectors.
+                |Now evaluating against ${test.size} examples.
      """.stripMargin
     )
     svmModel
@@ -145,16 +159,16 @@ object PerfEvalSmo extends App {
     val (precision, recall, f1) = calcPerf(confMat)
     import confMat._
     s"""Performance:
-       |        +    |   -
-       |     ---------------
-       | T  |  $tp   | $tn  |
+              |        +    |   -
+              |     ---------------
+              | T  |  $tp   | $tn  |
        |---------------------
-       | F  |  $fp   | $fn  |
+              | F  |  $fp   | $fn  |
        |    ----------------
-       |
+              |
        |Precision: ${precision * 100.0} %
-       |Recall:    ${recall * 100.0} %
-       |F1:        ${f1 * 100.0} %
+              |Recall:    ${recall * 100.0} %
+              |F1:        ${f1 * 100.0} %
      """.stripMargin
   }
 
