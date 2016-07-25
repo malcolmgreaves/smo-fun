@@ -163,6 +163,7 @@ object PerfEvalSmo extends App {
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
           |Found ${svmModel.size} support vectors.
+          |# NaNs from training: ${svmModel.alphas.count { _.isNaN }}
           |Now evaluating against ${test.size} examples.
      """.stripMargin
     )
@@ -170,13 +171,17 @@ object PerfEvalSmo extends App {
   }
 
   val confMat = {
+    val marginOf = calcMarginDist(doLowMemUse)(svm)
     val classifier = svmClassifier(doLowMemUse)(svm)
     val (metrics, testTime) = time {
       test
         .foldLeft(ConfusionMatrix.zero) {
           case (cm, (input, target)) =>
-            val prediction = classifier(input)
+            val pTar = marginOf(input)
+            val prediction = pTar > 0.0
+            //            val prediction = classifier(input)
             val targetIsTrue = target > 0.0
+            println(s"\tprediction: $pTar  target: $target")
             (targetIsTrue, prediction) match {
               case (true, true) => cm.copy(tp = cm.tp + 1)
               case (true, false) => cm.copy(fn = cm.fn + 1)

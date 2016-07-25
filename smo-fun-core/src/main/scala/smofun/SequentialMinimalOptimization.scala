@@ -353,7 +353,7 @@ object SequentialMinimalOptimization {
           .data
           .toSeq
           .zipWithIndex
-          .filter { case (a, _) => !isZero(a) }
+          .filter { case (a, _) => !a.isNaN && !isZero(a) }
           .map { case (_, index) => index }
 
       val (alphaNZ, t4NZA, v4NZA) = {
@@ -377,7 +377,7 @@ object SequentialMinimalOptimization {
       alphas = nonZeroAlphas, //alphas.data.toIndexedSeq,
       targets = targetsForNZA, //targetOnly.data.toIndexedSeq,
       vectors = vectorsForNZA, //vecOnly.toIndexedSeq,
-      b = b,
+      b = if (!b.isNaN) b else 0.0,
       K = K
     )
   }
