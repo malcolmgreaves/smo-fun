@@ -56,7 +56,7 @@ object PerfEvalSmo extends App {
 
     (
       shuffled.slice(0, splitIndx),
-      shuffled.slice(splitIndx, shuffled.size - 1)
+      shuffled.slice(splitIndx, shuffled.size)
     )
   }
 
