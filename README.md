@@ -1,4 +1,6 @@
 # smo-fun
+[![Build Status](https://travis-ci.org/malcolmgreaves/smo-fun.svg?branch=master)](https://travis-ci.org/malcolmgreaves/smo-fun) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.malcolmgreaves/smo-fun-core_2.11/badge.svg?style=plastic)](https://maven-badges.herokuapp.com/maven-central/io.malcolmgreaves/smo-fun-core_2.11)
+
 A efficient implementation of the Sequential Minimal Optimization (SMO) algorithm for training Support Vector Machines (SVMs). Exposes training behavior in a side-effect free, functional manner.
 
 # Project Structure
