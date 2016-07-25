@@ -346,7 +346,7 @@ object SequentialMinimalOptimization {
 
     // finished training, output model information
 
-    val (nonZeroAlphas, targetsForNZA, vectorsForNZA) = {
+    val (nonZeroBothAlphaTarget, vectorsForNZA) = {
 
       val inidicesOfNonZeroAlphas: Seq[Int] =
         alphas
@@ -356,27 +356,25 @@ object SequentialMinimalOptimization {
           .filter { case (a, _) => !a.isNaN && !isZero(a) }
           .map { case (_, index) => index }
 
-      val (alphaNZ, t4NZA, v4NZA) = {
+      val (bothATNZ, v4NZA) = {
         val s = inidicesOfNonZeroAlphas.size
-        (new Array[Double](s), new Array[Double](s), new Array[Vec](s))
+        (new Array[Double](s), new Array[Vec](s))
       }
 
       cfor(0)(_ < inidicesOfNonZeroAlphas.size, _ + 1) { i =>
 
         val indexOfSupportVector = inidicesOfNonZeroAlphas(i)
 
-        alphaNZ(i) = alphas(indexOfSupportVector)
-        t4NZA(i) = targetOnly(indexOfSupportVector)
+        bothATNZ(i) = alphas(indexOfSupportVector) * targetOnly(indexOfSupportVector)
         v4NZA(i) = vecOnly(indexOfSupportVector)
       }
 
-      (alphaNZ.toIndexedSeq, t4NZA.toIndexedSeq, v4NZA.toIndexedSeq)
+      (bothATNZ, v4NZA.toIndexedSeq)
     }
 
     SvmDualModel(
-      alphas = nonZeroAlphas, //alphas.data.toIndexedSeq,
-      targets = targetsForNZA, //targetOnly.data.toIndexedSeq,
-      vectors = vectorsForNZA, //vecOnly.toIndexedSeq,
+      bothAlphaTarget = nonZeroBothAlphaTarget,
+      supportVectors = vectorsForNZA,
       b = if (!b.isNaN) b else 0.0,
       K = K
     )

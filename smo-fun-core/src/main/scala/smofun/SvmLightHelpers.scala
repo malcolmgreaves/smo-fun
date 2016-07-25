@@ -95,13 +95,13 @@ object SvmLightHelpers {
         "1 # kernel parameter -s",
         "1 # kernel parameter -r",
         "empty# kernel parameter -u",
-        s"${svm.vectors.head.data.length} # highest feature index",
+        s"${svm.supportVectors.head.data.length} # highest feature index",
         s"$nTrain # number of training documents",
         s"${svm.size + 1} # number of support vectors plus 1",
         s"${svm.b} # threshold b, each following line is a SV (starting with alpha*y)"
       )
 
-      val modelSVs = svm.vectors.zip(svm.alphas).zip(svm.targets)
+      val modelSVs = svm.supportVectors.zip(svm.alphas).zip(svm.targets)
         .map {
           case ((sv, alpha), target) =>
             s"${alpha * target} ${writeVectorSvmLight(sv)} #"
@@ -149,7 +149,7 @@ object SvmLightHelpers {
       SvmDualModel(
         alphas = alphas.toIndexedSeq,
         targets = targets.toIndexedSeq,
-        vectors = svs.toIndexedSeq,
+        supportVectors = svs.toIndexedSeq,
         b = b,
         K = SmoHelpers.Kernels.gaussian(sigma)
       )
