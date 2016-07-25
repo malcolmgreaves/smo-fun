@@ -155,11 +155,6 @@ object SequentialMinimalOptimization {
             alphas(i1) = newAlpha1
             alphas(i2) = newAlpha2
 
-            // update our error cache with the SVM predictions on i1,i2 using
-            // the updated alphas
-            errorCache(i1) = predict(i1) - y1
-            errorCache(i2) = predict(i2) - y2
-
             // calculate the threshold update
             b =
               if (0.0 < newAlpha1 && newAlpha1 < C) {
@@ -171,10 +166,19 @@ object SequentialMinimalOptimization {
                 b2
 
               } else {
-                val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
-                val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
+                val a1DiffY1 = y1 * (newAlpha1 - alph1)
+                val a2DiffY2 = y2 * (newAlpha2 - alph2)
+
+                val b1 = b - e1 - a1DiffY1 * k11 - a2DiffY2 * k12
+                val b2 = b - e2 - a1DiffY1 * k12 - a2DiffY2 * k22
+
                 0.5 * (b1 + b2)
               }
+
+            // update our error cache with the SVM predictions on i1,i2 using
+            // the updated alphas
+            errorCache(i1) = predict(i1) - y1
+            errorCache(i2) = predict(i2) - y2
 
             // yes we changed alphas!
             true

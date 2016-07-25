@@ -90,9 +90,7 @@ object SmoHelpers {
         cfor(0)(_ < size, _ + 1) { i =>
           sum += kernel(supportVectors(i), input) * bothAlphaTarget(i)
         }
-        sum -= b
-        ///
-        sum
+        sum - b
       }
   }
 

@@ -23,7 +23,7 @@ object PredictSavedModelM extends App {
   val model = checksOutAsFile(1, "an svm-light formatted model")(
     Try(new File(args(1)))
   ).get
-  val out = Try(new File(args(2))).getOrElse(new File("svm_prediction_out"))
+  val out = Try(new File(args(2))).getOrElse(new File("svm_predictions_out"))
   println(
     s"""Command Line Arguments:
        |Using labeled data from:      $loc
