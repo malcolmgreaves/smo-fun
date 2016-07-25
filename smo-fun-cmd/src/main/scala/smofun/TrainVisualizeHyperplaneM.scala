@@ -1,8 +1,11 @@
 package smofun
 
+import java.awt
 import java.io.File
 
-import breeze.linalg.{ DenseVector, SparseVector }
+import breeze.linalg.{DenseVector, SparseVector}
+import com.quantifind.charts.highcharts.{Highchart, Series, SeriesType}
+import com.quantifind.charts.repl.IterablePair
 import smofun.SequentialMinimalOptimization._
 import smofun.SmoHelpers.Kernels._
 import smofun.SmoHelpers._
@@ -15,23 +18,23 @@ object TrainVisualizeHyperplaneM extends App {
   import SvmLightHelpers._
   import AppHelpers._
 
-  lazy val smoSolver = SequentialMinimalOptimization.train(conf) _
+  /////////////////////////////////////////////////////////////////////////////
+
+  import SvmLightHelpers._
+  import AppHelpers._
 
   /////////////////////////////////////////////////////////////////////////////
 
-  val loc = new File(Try(args.head).getOrElse("./data/diabetes"))
-  val doBalanced = Try(args(1).toBoolean).getOrElse(true)
-  val trainProp = Try(args(2).toDouble)
-    .toOption
-    .flatMap { x => if (x > 0.0 && x < 1.0) Some(x) else None }
-    .getOrElse(0.75)
-  val doLowMemUse = Try(args(3).toBoolean).getOrElse(false)
-  val doFullAlphaSearch = Try(args(4).toBoolean).getOrElse(false)
-  val c = Try(args(5).toDouble).getOrElse(1.0)
-  val tol = Try(args(6).toDouble).getOrElse(0.001)
-  val sigma = Try(args(7).toDouble).getOrElse(0.5)
+  val loc = new File("data/SupportVectorMachineWithGaussianKernel_svmlight")
+  val doBalanced = false
+  val trainProp = 0.75
+  val doLowMemUse = true
+  val doFullAlphaSearch = true
+  val c = 1.0
+  val tol = 0.001
+  val sigma = 0.01
   println(
-    s"""Command Line Arguments:
+    s"""Configuration
         |Using labeled data from:      $loc
         |Doing +/- balanced training?: $doBalanced
         |Training Proportion:          $trainProp
@@ -42,34 +45,55 @@ object TrainVisualizeHyperplaneM extends App {
         |S.D. of Gaussian Kernel:      $sigma
      """.stripMargin
   )
-  val conf = SvmConfig(
-    C = c,
-    tolerance = tol,
-    K = gaussian(sigma),
-    doFullAlphaSearch = doFullAlphaSearch
-  )
+  val smoSolver = SequentialMinimalOptimization.train(
+    SvmConfig(
+      C = c,
+      tolerance = tol,
+      K = gaussian(sigma),
+      doFullAlphaSearch = doFullAlphaSearch
+    )
+  ) _
 
   ////////
 
   val dimensionality = calculateDimensionality(loc)
-  val parse = parseSvmLightFmt(dimensionality)
 
-  val data = shuffle {
-    Source
-      .fromFile(loc)
-      .getLines()
-      .map { parse }
-      .toSeq
+  val data = {
+    val parse = parseSvmLightFmt(dimensionality)
+    val origData: Seq[(Vec, Target)] =
+      Source
+        .fromFile(loc)
+        .getLines()
+        .map { parse }
+        .toSeq
+    val shuffled = shuffle(origData)
+    val (pos, neg) = splitPosNeg(shuffled)
+
+    println(
+      s"""${pos.size} + examples and ${neg.size} - examples
+         |Using ${trainProp * 100.0} % for training, rest for test.
+       """.stripMargin
+    )
+
+    val finalLabeledData =
+      if (doBalanced) {
+        val balanced = mkBalanced(pos, neg)
+        println(
+          s"""Doing + and - class balancing
+              |Balanced size: ${balanced.size}""".stripMargin
+        )
+        balanced
+
+      } else {
+        println("Not doing any class rebalancing")
+        shuffled
+      }
+
+    finalLabeledData
   }
 
-  println(
-    s"""Training on ${data.size} vectors, each of length $dimensionality
-        |Using the following SVM training configuration:
-        |$conf
-     """.stripMargin
-  )
-
   val svm = {
+    println(s"Training on ${data.size} vectors, each of length $dimensionality")
     val (svmModel, trainTime) = time { smoSolver(data) }
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
@@ -79,6 +103,72 @@ object TrainVisualizeHyperplaneM extends App {
     svmModel
   }
 
+
   /// Visualize Hyperplane
+
+  val classifier = svmClassifier(true)(svm)
+
+  val colorPos = awt.Color.RED
+  val colorNeg = awt.Color.BLUE
+
+  val xs = data.map { case (vec, _) => vec(0) }
+  val ys =  data.map { case (vec, _) => vec(1) }
+
+  val byColor =
+    data
+      .map {
+        case (vec, _) =>
+          (
+            if(classifier(vec)) colorPos else colorNeg,
+            vec(0),
+            vec(1)
+          )
+      }
+      .groupBy { _._1 }
+
+  val (predictedPos, predictedNeg) = (byColor(colorPos),byColor(colorNeg))
+
+  import com.quantifind.charts.Highcharts._
+  import com.quantifind.charts.highcharts
+
+  lazy val splitXY: Seq[(_, Double, Double)] => (Seq[Double], Seq[Double]) =
+    values => (values.map { _._2 }, values.map { _._3 })
+
+  def better_scatter(
+                      x: Seq[Double],
+                      y: Seq[Double],
+                      color: awt.Color
+                    ): Highchart = {
+
+    import Highchart._
+    plot(
+      Highchart(
+        Series(
+          data = x.zip(y).toSeq,
+          chart = Some(SeriesType.scatter),
+          color = Some(highcharts.Color.javaColorToHex(color))
+        )
+      )
+    )
+  }
+
+
+
+
+  val sp1 = {
+    val (x,y) = splitXY(predictedPos)
+    better_scatter(x, y, colorPos)
+  }
+
+  hold()
+
+  val sp2 = {
+    val (x,y) = splitXY(predictedNeg)
+    better_scatter(x, y, colorNeg)
+  }
+
+  title("TITLE")
+  yAxis("Feature Value #1")
+  xAxis("Feature Value #2")
 
 }

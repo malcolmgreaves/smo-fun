@@ -48,9 +48,9 @@ object PerfEvalSmoM extends App {
   ////////
 
   val dimensionality = calculateDimensionality(loc)
-  val parse = parseSvmLightFmt(dimensionality)
 
   val (train, test) = {
+    val parse = parseSvmLightFmt(dimensionality)
     val data: Seq[(Vec, Target)] =
       Source
         .fromFile(loc)
@@ -76,21 +76,20 @@ object PerfEvalSmoM extends App {
         balanced
 
       } else {
-        println("Not doing any class rebalancing")
+        println("Not doing any class re-balancing")
         shuffled
       }
 
     splitTrainTest(trainProp)(finalLabeledData)
   }
 
-  println(
-    s"""Training on ${train.size} vectors, each of length $dimensionality
-        |Using the following SVM training configuration:
-        |$conf
-     """.stripMargin
-  )
-
   val svm = {
+    println(
+      s"""Training on ${train.size} vectors, each of length $dimensionality
+          |Using the following SVM training configuration:
+          |$conf
+     """.stripMargin
+    )
     val (svmModel, trainTime) = time { smoSolver(train) }
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
