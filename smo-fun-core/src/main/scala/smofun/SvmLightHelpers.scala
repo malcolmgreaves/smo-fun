@@ -76,11 +76,13 @@ object SvmLightHelpers {
       }
     }
 
-  lazy val writeVectorSvmLight: DenseVector[Double] => String = _
-    .data
-    .zipWithIndex
-    .map { case (v, i) => s"${i + 1}:$v" }
-    .mkString(" ")
+  lazy val writeVectorSvmLight: DenseVector[Double] => String =
+    dv => dv
+      .activeKeysIterator
+      .map { i => s"${i + 1}:${dv(i)}" }
+      .mkString(" ")
+
+  type ModelOutInfo = (Double, Int, SvmDualModel)
 
   lazy val asSvmLightFmt: ModelOutInfo => Seq[String] = {
     case (sigma, nTrain, svm) =>
@@ -111,26 +113,20 @@ object SvmLightHelpers {
   lazy val parseOut: String => String =
     _.split("#").head.trim
 
-  lazy val parseSV: Int => String => (DenseVector[Double], Double, Double) =
-    dims => line => {
-
-      val bits = whitespaceSplit(line)
-
-      val (target, alpha) = {
-        val x = bits.head.toDouble
-        (
-          if (x < 0.0) -1.0 else 1.0,
-          math.abs(x)
-        )
+  lazy val parseSV: Dimensionality => String => (DenseVector[Double], Double, Double) =
+    dims => {
+      val parse = parseSvmLightFmt(dims)
+      line => {
+        val (dv, bothAlphaTarget) = parse(line)
+        val (target, alpha) = {
+          val x = bothAlphaTarget
+          (
+            if (x < 0.0) -1.0 else 1.0,
+            math.abs(x)
+          )
+        }
+        (dv, target, alpha)
       }
-
-      val dv = DenseVector.zeros[Double](dims)
-      bits.slice(1, bits.length).foreach { b =>
-        val (i, v) = separateIndexValue(b)
-        dv(i) = v
-      }
-
-      (dv, target, alpha)
     }
 
   lazy val fromSvmLightFmt: Seq[String] => E[SvmDualModel] =
@@ -139,12 +135,12 @@ object SvmLightHelpers {
       // ignore lines(1-2) TODO handle more kernels
       val sigma = parseOut(lines(3)).toDouble
       // ignore lines(4-6) TODO handle more kernels
-      val dimensionality = parseOut(lines(7)).toInt
+      val dimensionality = Tag[Int, Dim](parseOut(lines(7)).toInt)
       // ignore lines(8)
       val nSvs = parseOut(lines(9)).toInt - 1
       val b = parseOut(lines(10)).toDouble
       // now onto the support vectors!
-      val (svs, alphas, targets) =
+      val (svs, targets, alphas) =
         lines
           .slice(11, lines.size)
           .map { line => parseSV(dimensionality)(parseOut(line)) }
@@ -158,8 +154,6 @@ object SvmLightHelpers {
         K = SmoHelpers.Kernels.gaussian(sigma)
       )
     }
-
-  type ModelOutInfo = (Double, Int, SvmDualModel)
 
   lazy val writeModel: ModelOutInfo => File => E[Unit] =
     mo => fi => \/.fromTryCatchNonFatal {

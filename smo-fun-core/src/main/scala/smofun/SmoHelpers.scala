@@ -3,10 +3,12 @@ package smofun
 import java.util.concurrent.TimeUnit
 
 import breeze.linalg.DenseVector
+import smofun.SvmLightHelpers.{ Dim, Dimensionality }
 import spire.syntax.cfor._
 
 import scala.concurrent.duration.Duration
 import scala.util.Random
+import scalaz.Tag
 
 object SmoHelpers {
 
@@ -68,6 +70,7 @@ object SmoHelpers {
     assert(alphas.size == targets.size)
     assert(targets.size == vectors.size)
     val size = alphas.size
+    val dim: Dimensionality = Tag[Int, Dim](vectors.head.data.length)
   }
 
   type BinaryClassifier = Vec => Boolean

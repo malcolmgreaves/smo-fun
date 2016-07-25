@@ -43,11 +43,11 @@ object PredictSavedModelM extends App {
     ),
     identity
   )
-
   val marginOf = calcMarginDist(doLowMemUse)(svm)
+  println(s"Loaded SVM model. Now testing...")
 
   val test: Seq[(Vec, Target)] = {
-    val parse = parseSvmLightFmt(Tag[Int, Dim](svm.vectors.size))
+    val parse = parseSvmLightFmt(Tag[Int, Dim](Tag.unwrap[Int, Dim](svm.dim)))
     Source
       .fromFile(loc)
       .getLines()
