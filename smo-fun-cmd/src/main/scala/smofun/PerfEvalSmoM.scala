@@ -12,85 +12,17 @@ import scala.util.{ Random, Try }
 object PerfEvalSmoM extends App {
 
   import SvmLightHelpers._
+  import AppHelpers._
 
   lazy val smoSolver = SequentialMinimalOptimization.train(conf) _
 
-  def shuffle[T](xs: Seq[T]): Seq[T] =
-    xs
-      .map { x => (x, Random.nextInt()) }
-      .sortBy { _._2 }
-      .map { _._1 }
-
-  lazy val splitPosNeg = (xs: Seq[(Vec, Target)]) =>
-    (
-      xs.filter { _._2 > 0.0 },
-      xs.filter { _._2 < 0.0 }
-    )
-
-  lazy val mkBalanced: (Seq[(Vec, Target)], Seq[(Vec, Target)]) => Seq[(Vec, Target)] =
-    (pos, neg) =>
-      if (pos.size < neg.size)
-        pos ++ neg.slice(0, pos.size)
-      else
-        pos.slice(0, neg.size) ++ neg
-
-  lazy val splitProp = (prop: Double) => (xs: Seq[(Vec, Target)]) => {
-    val splitIndx = (xs.size * prop).round.toInt
-    (
-      xs.slice(0, splitIndx),
-      xs.slice(splitIndx, xs.size)
-    )
-  }
-
-  lazy val splitTrainTest = (prop: Double) => {
-    val sp = splitProp(prop)
-    (xs: Seq[(Vec, Target)]) => {
-
-      val (pos, neg) = splitPosNeg(xs)
-      val (trainPos, testPos) = sp(pos)
-      val (trainNeg, testNeg) = sp(neg)
-      (
-        trainPos ++ trainNeg,
-        testPos ++ testNeg
-      )
-    }
-  }
-
-  case class ConfusionMatrix(tp: Int, fp: Int, tn: Int, fn: Int)
-  object ConfusionMatrix {
-    val zero = ConfusionMatrix(0, 0, 0, 0)
-  }
-
-  lazy val calcPerf: ConfusionMatrix => (Double, Double, Double) =
-    cm => {
-      import cm._
-
-      val (precision, recall) = {
-        val tpD = tp.toDouble
-        (
-          if (tp == 0 && fp == 0) 0.0 else tpD / (tpD + fp),
-          if (tp == 0 && tn == 0) 0.0 else tpD / (tpD + tn)
-        )
-      }
-      val f1 =
-        if (tp == 0 && (fp == 0 || fn == 0))
-          0.0
-        else
-          (2.0 * precision * recall) / (precision + recall)
-
-      (precision, recall, f1)
-    }
-
   /////////////////////////////////////////////////////////////////////////////
 
-  val loc = new File(Try(args.head).getOrElse("./data/diabetes"))
-  val doBalanced = Try(args(1).toBoolean).getOrElse(true)
-  val trainProp = Try(args(2).toDouble)
-    .toOption
-    .flatMap { x => if (x > 0.0 && x < 1.0) Some(x) else None }
-    .getOrElse(0.75)
-  val doLowMemUse = Try(args(3).toBoolean).getOrElse(false)
-  val doFullAlphaSearch = Try(args(4).toBoolean).getOrElse(false)
+  val loc = new File("data/SupportVectorMachineWithGaussianKernel_svmlight")
+  val doBalanced = false
+  val trainProp = 0.75
+  val doLowMemUse = true
+  val doFullAlphaSearch = true
   val c = Try(args(5).toDouble).getOrElse(1.0)
   val tol = Try(args(6).toDouble).getOrElse(0.001)
   val sigma = Try(args(7).toDouble).getOrElse(0.5)
@@ -116,9 +48,9 @@ object PerfEvalSmoM extends App {
   ////////
 
   val dimensionality = calculateDimensionality(loc)
-  val parse = parseSvmLightFmt(dimensionality)
 
   val (train, test) = {
+    val parse = parseSvmLightFmt(dimensionality)
     val data: Seq[(Vec, Target)] =
       Source
         .fromFile(loc)
@@ -144,21 +76,20 @@ object PerfEvalSmoM extends App {
         balanced
 
       } else {
-        println("Not doing any class rebalancing")
+        println("Not doing any class re-balancing")
         shuffled
       }
 
     splitTrainTest(trainProp)(finalLabeledData)
   }
 
-  println(
-    s"""Training on ${train.size} vectors, each of length $dimensionality
-        |Using the following SVM training configuration:
-        |$conf
-     """.stripMargin
-  )
-
   val svm = {
+    println(
+      s"""Training on ${train.size} vectors, each of length $dimensionality
+          |Using the following SVM training configuration:
+          |$conf
+     """.stripMargin
+    )
     val (svmModel, trainTime) = time { smoSolver(train) }
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
@@ -181,7 +112,6 @@ object PerfEvalSmoM extends App {
             val prediction = pTar > 0.0
             //            val prediction = classifier(input)
             val targetIsTrue = target > 0.0
-            println(s"\tprediction: $pTar  target: $target")
             (targetIsTrue, prediction) match {
               case (true, true) => cm.copy(tp = cm.tp + 1)
               case (true, false) => cm.copy(fn = cm.fn + 1)
