@@ -48,16 +48,33 @@ object PerfEvalSmo extends App {
         .sortBy { _._2 }
         .map { _._1 }
 
-    val splitIndx = {
-      val trainProp = 0.75
-      println(s"Using ${trainProp * 100.0} % for training, rest for test")
-      (shuffled.size * trainProp).round.toInt
-    }
+    val pos = shuffled.filter { _._2 > 0.0 }
+    val neg = shuffled.filter { _._2 < 0.0 }
 
-    (
-      shuffled.slice(0, splitIndx),
-      shuffled.slice(splitIndx, shuffled.size)
+    val balanced =
+      if (pos.size < neg.size)
+        pos ++ neg.slice(0, pos.size)
+      else
+        pos.slice(0, neg.size) ++ neg
+
+    println(
+      s"""${pos.size} + examples and ${neg.size} - examples
+         |Balanced size: ${balanced.size}
+       """.stripMargin
     )
+
+    (balanced, balanced)
+
+    //    val splitIndx = {
+    //      val trainProp = 0.75
+    //      println(s"Using ${trainProp * 100.0} % for training, rest for test")
+    //      (shuffled.size * trainProp).round.toInt
+    //    }
+    //
+    //    (
+    //      shuffled.slice(0, splitIndx),
+    //      shuffled.slice(splitIndx, shuffled.size)
+    //    )
   }
 
   println(
