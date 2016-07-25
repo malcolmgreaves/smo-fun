@@ -14,24 +14,13 @@ object PerfEvalSmo extends App {
   import SvmLightHelpers._
 
   val conf = SvmConfig(
-    C = 1.0,
+    C = 1.25,
     tolerance = 0.001,
-    K = gaussian(0.1),
+    K = gaussian(0.05),
     doFullAlphaSearch = false
   )
 
   val smoSolver = SequentialMinimalOptimization.train(conf) _
-
-  //////////////
-
-  val loc = {
-    new File(Try(args.head).getOrElse("./data/diabetes"))
-  }
-
-  println(s"Using labeled data from: $loc")
-
-  val dimensionality = calculateDimensionality(loc)
-  val parse = parseSvmLightFmt(dimensionality)
 
   def shuffle[T](xs: Seq[T]): Seq[T] =
     xs
@@ -74,6 +63,20 @@ object PerfEvalSmo extends App {
     }
   }
 
+  //////////////
+
+  val loc = new File(Try(args.head).getOrElse("./data/diabetes"))
+  val doBalanced = Try(args(1).toBoolean).getOrElse(true)
+  val trainProp = Try(args(2).toDouble)
+    .toOption
+    .flatMap { x => if (x > 0.0 && x < 1.0) Some(x) else None }
+    .getOrElse(0.75)
+
+  println(s"Using labeled data from: $loc")
+
+  val dimensionality = calculateDimensionality(loc)
+  val parse = parseSvmLightFmt(dimensionality)
+
   val (train, test) = {
     val data: Seq[(Vec, Target)] =
       Source
@@ -83,32 +86,43 @@ object PerfEvalSmo extends App {
         .toSeq
     val shuffled = shuffle(data)
     val (pos, neg) = splitPosNeg(shuffled)
-    val balanced = mkBalanced(pos, neg)
-    val trainProp = 0.75
+
     println(
       s"""${pos.size} + examples and ${neg.size} - examples
-               |Balanced size: ${balanced.size}
-               |Using ${trainProp * 100.0} % for training, rest for test.
+         |Using ${trainProp * 100.0} % for training, rest for test.
        """.stripMargin
     )
 
-    splitTrainTest(trainProp)(balanced)
+    val finalLabeledData =
+      if (doBalanced) {
+        val balanced = mkBalanced(pos, neg)
+        println(
+          s"""Doing + and - class balancing
+            |Balanced size: ${balanced.size}""".stripMargin
+        )
+        balanced
+
+      } else {
+        println("Not doing any class rebalancing")
+        shuffled
+      }
+
+    splitTrainTest(trainProp)(finalLabeledData)
   }
 
   println(
     s"""Training on ${train.size} vectors, each of length $dimensionality
-              |Using the following SVM training configuration:
-              |$conf
+        |Using the following SVM training configuration:
+        |$conf
      """.stripMargin
   )
 
   val svm = {
     val (svmModel, trainTime) = time { smoSolver(train) }
-
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
-                |Found ${svmModel.size} support vectors.
-                |Now evaluating against ${test.size} examples.
+          |Found ${svmModel.size} support vectors.
+          |Now evaluating against ${test.size} examples.
      """.stripMargin
     )
     svmModel
