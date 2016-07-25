@@ -18,7 +18,22 @@ object PerfEvalSmoM extends App {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  val loc = new File(args.head)
+  val loc = Try(new File(args.head))
+    .recover {
+      case _ => throw new IllegalArgumentException(
+        "Must supply a labeled data set as the first argument!"
+      )
+    }
+    .map { x =>
+      if (!x.isFile)
+        throw new IllegalArgumentException(
+          s"First argument must be an svm-light formatted labeled data file! This doesn't work: $x"
+        )
+      else
+        x
+    }
+    .get
+
   val doBalanced = Try(args(1).toBoolean).getOrElse(true)
   val trainProp = Try(args(2).toDouble).getOrElse(0.75)
   val doLowMemUse = Try(args(3).toBoolean).getOrElse(true)
