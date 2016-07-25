@@ -16,7 +16,7 @@ object SequentialMinimalOptimization {
     import config._
 
     val size = data.size
-    val alphas = DenseVector[Double](Initialize.uniform(size)(Random.self))
+    val alphas = DenseVector[Double](Initialize.uniform(size, C)(Random.self))
 
     // Non-bound example means its alpha is NOT ZERO and NOT C.
     @inline def calculateNonBoundExamples(): Array[Int] = {
@@ -64,11 +64,14 @@ object SequentialMinimalOptimization {
       e
     }
 
-    def takeStep(i1: Int, i2: Int): Boolean =
-      if (i1 == i2) {
+    def takeStep(input1: Int, input2: Int): Boolean =
+      if (input1 == input2) {
         false
 
       } else {
+
+        //        val (i1, i2) = (input2, input1)
+        val (i1, i2) = (input1, input2)
 
         val alph1 = alphas(i1)
         val y1 = targetOnly(i1)
@@ -110,9 +113,9 @@ object SequentialMinimalOptimization {
             if (eta > 0.0) {
 
               val a2 = alph2 + y2 * ((e1 - e2) / eta)
-              if (a2 < l)
+              if (a2 <= l)
                 l
-              else if (a2 > h)
+              else if (a2 >= h)
                 h
               else
                 a2
@@ -149,32 +152,36 @@ object SequentialMinimalOptimization {
 
           else {
 
-            val newAlpha1 = alph1 + s * (alph2 - newAlpha2)
+            val newAlpha1 = alph1 + (s * (alph2 - newAlpha2))
 
             // store the new, calculated lagrange multipliers
             alphas(i1) = newAlpha1
             alphas(i2) = newAlpha2
 
+            // calculate the threshold update
+            b =
+              if (0.0 < newAlpha1 && newAlpha1 < C) {
+                val b1 = e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
+                b1 + b
+
+              } else if (0.0 < newAlpha2 && newAlpha2 < C) {
+                val b2 = e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
+                b2 + b
+
+              } else {
+                val a1DiffY1 = y1 * (newAlpha1 - alph1)
+                val a2DiffY2 = y2 * (newAlpha2 - alph2)
+
+                val b1 = (e1 - a1DiffY1 * k11 - a2DiffY2 * k12) + b
+                val b2 = (e2 - a1DiffY1 * k12 - a2DiffY2 * k22) + b
+
+                (b1 + b2) / 2.0
+              }
+
             // update our error cache with the SVM predictions on i1,i2 using
             // the updated alphas
             errorCache(i1) = predict(i1) - y1
             errorCache(i2) = predict(i2) - y2
-
-            // calculate the threshold update
-            b =
-              if (0.0 < newAlpha1 && newAlpha1 < C) {
-                val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
-                b1
-
-              } else if (0.0 < newAlpha2 && newAlpha2 < C) {
-                val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
-                b2
-
-              } else {
-                val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
-                val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
-                0.5 * (b1 + b2)
-              }
 
             // yes we changed alphas!
             true
@@ -346,7 +353,7 @@ object SequentialMinimalOptimization {
 
     // finished training, output model information
 
-    val (nonZeroAlphas, targetsForNZA, vectorsForNZA) = {
+    val (nonZeroBothAlphaTarget, vectorsForNZA) = {
 
       val inidicesOfNonZeroAlphas: Seq[Int] =
         alphas
@@ -356,27 +363,25 @@ object SequentialMinimalOptimization {
           .filter { case (a, _) => !a.isNaN && !isZero(a) }
           .map { case (_, index) => index }
 
-      val (alphaNZ, t4NZA, v4NZA) = {
+      val (bothATNZ, v4NZA) = {
         val s = inidicesOfNonZeroAlphas.size
-        (new Array[Double](s), new Array[Double](s), new Array[Vec](s))
+        (new Array[Double](s), new Array[Vec](s))
       }
 
       cfor(0)(_ < inidicesOfNonZeroAlphas.size, _ + 1) { i =>
 
         val indexOfSupportVector = inidicesOfNonZeroAlphas(i)
 
-        alphaNZ(i) = alphas(indexOfSupportVector)
-        t4NZA(i) = targetOnly(indexOfSupportVector)
+        bothATNZ(i) = alphas(indexOfSupportVector) * targetOnly(indexOfSupportVector)
         v4NZA(i) = vecOnly(indexOfSupportVector)
       }
 
-      (alphaNZ.toIndexedSeq, t4NZA.toIndexedSeq, v4NZA.toIndexedSeq)
+      (bothATNZ.toIndexedSeq, v4NZA.toIndexedSeq)
     }
 
     SvmDualModel(
-      alphas = nonZeroAlphas, //alphas.data.toIndexedSeq,
-      targets = targetsForNZA, //targetOnly.data.toIndexedSeq,
-      vectors = vectorsForNZA, //vecOnly.toIndexedSeq,
+      bothAlphaTargets = nonZeroBothAlphaTarget,
+      supportVectors = vectorsForNZA,
       b = if (!b.isNaN) b else 0.0,
       K = K
     )

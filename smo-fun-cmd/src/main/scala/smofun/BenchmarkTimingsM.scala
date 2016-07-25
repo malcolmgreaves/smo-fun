@@ -17,13 +17,12 @@ object BenchmarkTimingsM extends App {
   import BenchmarkHelpers._
   import fif.ImplicitCollectionsData._
 
-  val smoSolver = SequentialMinimalOptimization.train(
-    SvmConfig(
-      C = 1.0,
-      tolerance = 0.001,
-      K = gaussian(1.0)
-    )
-  ) _
+  val conf = SvmConfig(
+    C = 1.0,
+    tolerance = 0.001,
+    K = rbf(1.0)
+  )
+  val smoSolver = SequentialMinimalOptimization.train(conf) _
 
   val (nVec, dimensonality, spread, writeOutData, doJitWarmup) = (
     Try(args.head.toInt).toOption.getOrElse(1000),
@@ -38,7 +37,7 @@ object BenchmarkTimingsM extends App {
   val (randoData, dataCreationTime) = time {
     (0 until nVec).map { _ =>
       val x = DenseVector(
-        SmoHelpers.Initialize.uniform(dimensonality)(Random.self)
+        SmoHelpers.Initialize.uniform(dimensonality, conf.C)(Random.self)
       )
       cfor(0)(_ < x.length, _ + 1) { i =>
         x(i) *= Random.nextInt(spread).toDouble

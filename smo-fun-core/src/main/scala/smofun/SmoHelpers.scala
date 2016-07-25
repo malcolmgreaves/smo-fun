@@ -2,11 +2,14 @@ package smofun
 
 import java.util.concurrent.TimeUnit
 
-import breeze.linalg.DenseVector
+import breeze.linalg.{ DenseVector, SparseVector }
+import smofun.SvmLightHelpers.{ Dim, Dimensionality }
 import spire.syntax.cfor._
 
 import scala.concurrent.duration.Duration
+import scala.language.postfixOps
 import scala.util.Random
+import scalaz.Tag
 
 object SmoHelpers {
 
@@ -59,66 +62,47 @@ object SmoHelpers {
   )
 
   case class SvmDualModel(
-      alphas: IndexedSeq[Double],
-      targets: IndexedSeq[Double],
-      vectors: IndexedSeq[Vec],
+      bothAlphaTargets: IndexedSeq[Double],
+      supportVectors: IndexedSeq[Vec],
       b: Double,
       K: Kernel
   ) {
-    assert(alphas.size == targets.size)
-    assert(targets.size == vectors.size)
-    val size = alphas.size
+    assert(bothAlphaTargets.size == supportVectors.size)
+    assert(supportVectors nonEmpty)
+
+    val size = supportVectors.size
+    val dim: Dimensionality = Tag[Int, Dim](supportVectors.head.data.length)
   }
 
   type BinaryClassifier = Vec => Boolean
 
-  lazy val svmClassifier: Boolean => SvmDualModel => BinaryClassifier =
-    doLowMemUse => svm => {
-      val cm = calcMarginDist(doLowMemUse)(svm)
-      input => cm(input) > 0.0
+  lazy val svmClassifier: SvmDualModel => BinaryClassifier =
+    svm => {
+      val marginOf = calcMarginDist(svm)
+      input => marginOf(input) > 0.0
     }
 
-  lazy val calcMarginDist: Boolean => SvmDualModel => Vec => Target =
-    doLowMemUse => {
-      case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
-        val size = m.size
-        if (doLowMemUse) {
-          input =>
-            {
-              var sum = 0.0
-              cfor(0)(_ < size, _ + 1) { i =>
-                sum += kernel(vectors(i), input) * targets(i) * alphas(i)
-              }
-              sum -= b
-              ///
-              sum
-            }
-
-        } else {
-          val precompAlphaMultTarget = {
-            import breeze.linalg._
-            DenseVector(alphas: _*) :* DenseVector(targets: _*)
-          }
-          input => {
-            val resKernelVecInput = DenseVector.zeros[Double](size)
-            cfor(0)(_ < size, _ + 1) { i =>
-              resKernelVecInput(i) = kernel(vectors(i), input)
-            }
-            val sum: Double = resKernelVecInput dot precompAlphaMultTarget
-            sum - b
-          }
+  lazy val calcMarginDist: SvmDualModel => Vec => Target = {
+    case m @ SvmDualModel(bothAlphaTarget, supportVectors, b, kernel) =>
+      val size = m.size
+      input => {
+        var sum = 0.0
+        cfor(0)(_ < size, _ + 1) { i =>
+          sum += kernel(supportVectors(i), input) * bothAlphaTarget(i)
         }
-    }
+        sum - b
+      }
+  }
 
   lazy val onSameSide: (Target, Target) => Boolean =
     (y1, y2) => (y1 > 0.0 && y2 > 0.0) || (y1 < 0.0 && y2 < 0.0)
 
   object Initialize {
 
-    def uniform(size: Int)(implicit r: Random): Array[Double] = {
+    def uniform(size: Int, max: Double)(implicit r: Random): Array[Double] = {
       val x = new Array[Double](size)
       cfor(0)(_ < size, _ + 1) { i =>
-        x(i) = r.nextDouble()
+        x(i) = r.nextDouble() * max
       }
       x
     }
@@ -149,13 +133,16 @@ object SmoHelpers {
 
     lazy val linear: Kernel = (v1, v2) => v1.dot(v2)
 
-    type Sigma = Double
-    lazy val gaussian: Sigma => Kernel =
-      sigma => {
-        val denominatorPreCompute = 2.0 * sigma * sigma
+    type Gamma = Double
+    lazy val rbf: Gamma => Kernel =
+      gamma => {
+        assert(gamma > 0.0)
+        val precomp = -gamma
         (v1, v2) => {
           val diff = v1 - v2
-          math.exp(-diff.dot(diff) / denominatorPreCompute)
+          math.exp(
+            precomp * math.sqrt(diff.dot(diff))
+          )
         }
       }
 

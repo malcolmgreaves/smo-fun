@@ -1,9 +1,11 @@
 package smofun
 
+import java.io.File
+
 import smofun.SmoHelpers._
 
 import scala.language.postfixOps
-import scala.util.Random
+import scala.util.{ Random, Try }
 
 object AppHelpers {
 
@@ -72,5 +74,21 @@ object AppHelpers {
 
       (precision, recall, f1)
     }
+
+  lazy val checksOutAsFile: (Int, String) => Try[File] => Try[File] =
+    (argIdx, message) => _
+      .recover {
+        case _ => throw new IllegalArgumentException(
+          s"Must supply $message as the argument $argIdx!"
+        )
+      }
+      .map { x =>
+        if (!x.isFile)
+          throw new IllegalArgumentException(
+            s"Argument $argIdx ($message) must be a file! This doesn't input suffice: $x"
+          )
+        else
+          x
+      }
 
 }

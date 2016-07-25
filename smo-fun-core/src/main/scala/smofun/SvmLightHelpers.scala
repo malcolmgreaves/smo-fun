@@ -1,16 +1,10 @@
 package smofun
 
-import java.io.File
-import java.util.concurrent.TimeUnit
-
+import java.io.{ BufferedWriter, File, FileWriter }
 import breeze.linalg.{ DenseVector, SparseVector }
-import spire.syntax.cfor._
-
-import scala.concurrent.duration.Duration
 import scala.io.Source
 import scala.language.postfixOps
-import scala.util.Random
-import scalaz.{ @@, Tag }
+import scalaz.{ @@, Tag, \/ }
 
 object SvmLightHelpers {
 
@@ -19,8 +13,18 @@ object SvmLightHelpers {
   sealed trait Dim
   type Dimensionality = Int @@ Dim
 
+  type E[T] = \/[Throwable, T]
+
   lazy val whitespaceSplit: String => Seq[String] =
     _.split("\\s+").toSeq
+
+  lazy val separateIndexValue: String => (Int, Double) =
+    bit => {
+      val sbits = bit.split(":")
+      val fIndex = sbits.head.toInt - 1
+      val fValue = sbits(1).toDouble
+      (fIndex, fValue)
+    }
 
   lazy val svmLightFmtSeparate: String => (Target, Seq[(Int, Double)]) =
     line => {
@@ -29,13 +33,9 @@ object SvmLightHelpers {
 
       val fv =
         if (bits.length > 1) {
-          bits.slice(1, bits.length)
-            .map { b =>
-              val sbits = b.split(":")
-              val fIndex = sbits.head.toInt - 1
-              val fValue = sbits(1).toDouble
-              (fIndex, fValue)
-            }
+          bits
+            .slice(1, bits.length)
+            .map { separateIndexValue }
 
         } else
           Seq.empty
@@ -75,5 +75,91 @@ object SvmLightHelpers {
         (dv, target)
       }
     }
+
+  lazy val writeVectorSvmLight: DenseVector[Double] => String =
+    dv => dv
+      .activeKeysIterator
+      .map { i => s"${i + 1}:${dv(i)}" }
+      .mkString(" ")
+
+  type ModelOutInfo = (Double, Int, SvmDualModel)
+
+  lazy val asSvmLightFmt: ModelOutInfo => Seq[String] = {
+    case (gamma, nTrain, svm) =>
+      val header = Seq(
+        //        "Trained using smo-fun (https://github.com/malcolmgreaves/smo-fun)",
+        "SVM-light Version V6.02",
+        "2 # kernel type",
+        "3 # kernel parameter -d",
+        s"$gamma # kernel parameter -g",
+        "1 # kernel parameter -s",
+        "1 # kernel parameter -r",
+        "empty# kernel parameter -u",
+        s"${svm.supportVectors.head.data.length} # highest feature index",
+        s"$nTrain # number of training documents",
+        s"${svm.size + 1} # number of support vectors plus 1",
+        s"${svm.b} # threshold b, each following line is a SV (starting with alpha*y)"
+      )
+
+      val modelSVs = svm.supportVectors.zip(svm.bothAlphaTargets)
+        .map {
+          case (sv, bothAlphaTarget) =>
+            s"$bothAlphaTarget ${writeVectorSvmLight(sv)} #"
+        }
+
+      header ++ modelSVs
+  }
+
+  lazy val parseOut: String => String =
+    _.split("#").head.trim
+
+  lazy val parseSV: Dimensionality => String => (DenseVector[Double], Double) =
+    dims => {
+      val parse = parseSvmLightFmt(dims)
+      line => {
+        val (dv, bothAlphaTarget) = parse(line)
+        (dv, bothAlphaTarget)
+      }
+    }
+
+  lazy val fromSvmLightFmt: Seq[String] => E[SvmDualModel] =
+    lines => \/.fromTryCatchNonFatal {
+      // ignore lines(0)
+      // ignore lines(1-2) TODO handle more kernels
+      val gamma = parseOut(lines(3)).toDouble
+      // ignore lines(4-6) TODO handle more kernels
+      val dimensionality = Tag[Int, Dim](parseOut(lines(7)).toInt)
+      // ignore lines(8)
+      val nSvs = parseOut(lines(9)).toInt - 1
+      val b = parseOut(lines(10)).toDouble
+      // now onto the support vectors!
+      val (svs, bothATs) =
+        lines
+          .slice(11, lines.size)
+          .map { line => parseSV(dimensionality)(parseOut(line)) }
+          .unzip
+
+      SvmDualModel(
+        bothAlphaTargets = bothATs.toIndexedSeq,
+        supportVectors = svs.toIndexedSeq,
+        b = b,
+        K = SmoHelpers.Kernels.rbf(gamma)
+      )
+    }
+
+  lazy val writeModel: ModelOutInfo => File => E[Unit] =
+    mo => fi => \/.fromTryCatchNonFatal {
+      val w = new BufferedWriter(new FileWriter(fi))
+      asSvmLightFmt(mo).foreach { line =>
+        w.write(line)
+        w.newLine()
+      }
+      w.close()
+    }
+
+  lazy val readModel: File => E[SvmDualModel] =
+    fi => \/.fromTryCatchNonFatal {
+      Source.fromFile(fi).getLines().toSeq
+    }.flatMap { fromSvmLightFmt }
 
 }
