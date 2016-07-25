@@ -16,7 +16,7 @@ object SequentialMinimalOptimization {
     import config._
 
     val size = data.size
-    val alphas = DenseVector[Double](Initialize.uniform(size)(Random.self))
+    val alphas = DenseVector[Double](Initialize.uniform(size, C)(Random.self))
 
     // Non-bound example means its alpha is NOT ZERO and NOT C.
     @inline def calculateNonBoundExamples(): Array[Int] = {
@@ -64,11 +64,14 @@ object SequentialMinimalOptimization {
       e
     }
 
-    def takeStep(i1: Int, i2: Int): Boolean =
-      if (i1 == i2) {
+    def takeStep(input1: Int, input2: Int): Boolean =
+      if (input1 == input2) {
         false
 
       } else {
+
+        val (i1, i2) = (input2, input1)
+        //        val (i1, i2) = (input1, input2)
 
         val alph1 = alphas(i1)
         val y1 = targetOnly(i1)
@@ -144,44 +147,58 @@ object SequentialMinimalOptimization {
                 alph2
             }
 
-          if (math.abs(newAlpha2 - alph2) < tolerance * (newAlpha2 + alph2 + tolerance))
+          if (newAlpha2.isNaN)
+            false
+
+          else if (math.abs(newAlpha2 - alph2) < tolerance * (newAlpha2 + alph2 + tolerance))
             false
 
           else {
 
             val newAlpha1 = alph1 + s * (alph2 - newAlpha2)
 
-            // store the new, calculated lagrange multipliers
-            alphas(i1) = newAlpha1
-            alphas(i2) = newAlpha2
+            if (!newAlpha1.isNaN) {
 
-            // calculate the threshold update
-            b =
-              if (0.0 < newAlpha1 && newAlpha1 < C) {
-                val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
-                b1
+              // store the new, calculated lagrange multipliers
+              alphas(i1) = newAlpha1
+              alphas(i2) = newAlpha2
 
-              } else if (0.0 < newAlpha2 && newAlpha2 < C) {
-                val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
-                b2
+              println(
+                s"""${"\t"}UPDATING
+                   |${"\t"}alphas($i1): ${alphas(i1)} (old: $alph1)
+                   |${"\t"}alphas($i2): ${alphas(i2)} (old: $alph2)""".stripMargin
+              )
 
-              } else {
-                val a1DiffY1 = y1 * (newAlpha1 - alph1)
-                val a2DiffY2 = y2 * (newAlpha2 - alph2)
+              // calculate the threshold update
+              b =
+                if (0.0 < newAlpha1 && newAlpha1 < C) {
+                  val b1 = b - e1 - y1 * (newAlpha1 - alph1) * k11 - y2 * (newAlpha2 - alph2) * k12
+                  b1
 
-                val b1 = b - e1 - a1DiffY1 * k11 - a2DiffY2 * k12
-                val b2 = b - e2 - a1DiffY1 * k12 - a2DiffY2 * k22
+                } else if (0.0 < newAlpha2 && newAlpha2 < C) {
+                  val b2 = b - e2 - y1 * (newAlpha1 - alph1) * k12 - y2 * (newAlpha2 - alph2) * k22
+                  b2
 
-                0.5 * (b1 + b2)
-              }
+                } else {
+                  val a1DiffY1 = y1 * (newAlpha1 - alph1)
+                  val a2DiffY2 = y2 * (newAlpha2 - alph2)
 
-            // update our error cache with the SVM predictions on i1,i2 using
-            // the updated alphas
-            errorCache(i1) = predict(i1) - y1
-            errorCache(i2) = predict(i2) - y2
+                  val b1 = b - e1 - a1DiffY1 * k11 - a2DiffY2 * k12
+                  val b2 = b - e2 - a1DiffY1 * k12 - a2DiffY2 * k22
 
-            // yes we changed alphas!
-            true
+                  0.5 * (b1 + b2)
+                }
+
+              // update our error cache with the SVM predictions on i1,i2 using
+              // the updated alphas
+              errorCache(i1) = predict(i1) - y1
+              errorCache(i2) = predict(i2) - y2
+
+              // yes we changed alphas!
+              true
+
+            } else
+              false
           }
         }
       }
@@ -368,6 +385,8 @@ object SequentialMinimalOptimization {
       cfor(0)(_ < inidicesOfNonZeroAlphas.size, _ + 1) { i =>
 
         val indexOfSupportVector = inidicesOfNonZeroAlphas(i)
+
+        println(s"\talphas($indexOfSupportVector): ${alphas(indexOfSupportVector)}")
 
         bothATNZ(i) = alphas(indexOfSupportVector) * targetOnly(indexOfSupportVector)
         v4NZA(i) = vecOnly(indexOfSupportVector)

@@ -99,10 +99,10 @@ object SmoHelpers {
 
   object Initialize {
 
-    def uniform(size: Int)(implicit r: Random): Array[Double] = {
+    def uniform(size: Int, max: Double)(implicit r: Random): Array[Double] = {
       val x = new Array[Double](size)
       cfor(0)(_ < size, _ + 1) { i =>
-        x(i) = r.nextDouble()
+        x(i) = r.nextDouble() * max
       }
       x
     }
