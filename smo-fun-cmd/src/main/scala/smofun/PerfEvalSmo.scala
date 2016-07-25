@@ -13,14 +13,7 @@ object PerfEvalSmo extends App {
 
   import SvmLightHelpers._
 
-  val conf = SvmConfig(
-    C = 1.0,
-    tolerance = 0.001,
-    K = gaussian(0.5),
-    doFullAlphaSearch = false
-  )
-
-  val smoSolver = SequentialMinimalOptimization.train(conf) _
+  lazy val smoSolver = SequentialMinimalOptimization.train(conf) _
 
   def shuffle[T](xs: Seq[T]): Seq[T] =
     xs
@@ -88,7 +81,7 @@ object PerfEvalSmo extends App {
       (precision, recall, f1)
     }
 
-  //////////////
+  /////////////////////////////////////////////////////////////////////////////
 
   val loc = new File(Try(args.head).getOrElse("./data/diabetes"))
   val doBalanced = Try(args(1).toBoolean).getOrElse(true)
@@ -97,14 +90,30 @@ object PerfEvalSmo extends App {
     .flatMap { x => if (x > 0.0 && x < 1.0) Some(x) else None }
     .getOrElse(0.75)
   val doLowMemUse = Try(args(3).toBoolean).getOrElse(false)
+  val doFullAlphaSearch = Try(args(4).toBoolean).getOrElse(false)
+  val c = Try(args(5).toDouble).getOrElse(1.0)
+  val tol = Try(args(6).toDouble).getOrElse(0.001)
+  val sigma = Try(args(7).toDouble).getOrElse(0.5)
   println(
     s"""Command Line Arguments:
        |Using labeled data from:      $loc
        |Doing +/- balanced training?: $doBalanced
        |Training Proportion:          $trainProp
        |Predict w/ low memory use?:   $doLowMemUse
+       |Doing Full Alpha_2 Search?:   $doFullAlphaSearch
+       |C (cost parameter):           $c
+       |Tolerance for Alpha Change:   $tol
+       |S.D. of Gaussian Kernel:      $sigma
      """.stripMargin
   )
+  val conf = SvmConfig(
+    C = c,
+    tolerance = tol,
+    K = gaussian(sigma),
+    doFullAlphaSearch = doFullAlphaSearch
+  )
+
+  ////////
 
   val dimensionality = calculateDimensionality(loc)
   val parse = parseSvmLightFmt(dimensionality)
