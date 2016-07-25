@@ -14,9 +14,9 @@ object PerfEvalSmo extends App {
   import SvmLightHelpers._
 
   val conf = SvmConfig(
-    C = 1.25,
+    C = 1.0,
     tolerance = 0.001,
-    K = gaussian(0.05),
+    K = gaussian(0.5),
     doFullAlphaSearch = false
   )
 
@@ -63,6 +63,31 @@ object PerfEvalSmo extends App {
     }
   }
 
+  case class ConfusionMatrix(tp: Int, fp: Int, tn: Int, fn: Int)
+  object ConfusionMatrix {
+    val zero = ConfusionMatrix(0, 0, 0, 0)
+  }
+
+  lazy val calcPerf: ConfusionMatrix => (Double, Double, Double) =
+    cm => {
+      import cm._
+
+      val (precision, recall) = {
+        val tpD = tp.toDouble
+        (
+          if (tp == 0 && fp == 0) 0.0 else tpD / (tpD + fp),
+          if (tp == 0 && tn == 0) 0.0 else tpD / (tpD + tn)
+        )
+      }
+      val f1 =
+        if (tp == 0 && (fp == 0 || fn == 0))
+          0.0
+        else
+          (2.0 * precision * recall) / (precision + recall)
+
+      (precision, recall, f1)
+    }
+
   //////////////
 
   val loc = new File(Try(args.head).getOrElse("./data/diabetes"))
@@ -71,8 +96,15 @@ object PerfEvalSmo extends App {
     .toOption
     .flatMap { x => if (x > 0.0 && x < 1.0) Some(x) else None }
     .getOrElse(0.75)
-
-  println(s"Using labeled data from: $loc")
+  val doLowMemUse = Try(args(3).toBoolean).getOrElse(false)
+  println(
+    s"""Command Line Arguments:
+       |Using labeled data from:      $loc
+       |Doing +/- balanced training?: $doBalanced
+       |Training Proportion:          $trainProp
+       |Predict w/ low memory use?:   $doLowMemUse
+     """.stripMargin
+  )
 
   val dimensionality = calculateDimensionality(loc)
   val parse = parseSvmLightFmt(dimensionality)
@@ -128,13 +160,8 @@ object PerfEvalSmo extends App {
     svmModel
   }
 
-  case class ConfusionMatrix(tp: Int, fp: Int, tn: Int, fn: Int)
-  object ConfusionMatrix {
-    val zero = ConfusionMatrix(0, 0, 0, 0)
-  }
-
   val confMat = {
-    val classifier = svmClassifier(svm)
+    val classifier = svmClassifier(doLowMemUse)(svm)
     val (metrics, testTime) = time {
       test
         .foldLeft(ConfusionMatrix.zero) {
@@ -152,22 +179,6 @@ object PerfEvalSmo extends App {
     println(s"Finished testing in ${testTime.toSeconds} seconds.")
     metrics
   }
-
-  lazy val calcPerf: ConfusionMatrix => (Double, Double, Double) =
-    cm => {
-      import cm._
-      val (precision, recall) = {
-        val tpD = tp.toDouble
-        (
-          tpD / (tpD + fp),
-          tpD / (tpD + tn)
-        )
-      }
-      val f1 =
-        (2.0 * precision * recall) / (precision + recall)
-
-      (precision, recall, f1)
-    }
 
   println {
     val (precision, recall, f1) = calcPerf(confMat)

@@ -72,35 +72,51 @@ object SmoHelpers {
 
   type BinaryClassifier = Vec => Boolean
 
-  lazy val svmClassifier: SvmDualModel => BinaryClassifier =
-    svm => {
-      val cm = calcMarginDist(svm)
+  lazy val svmClassifier: Boolean => SvmDualModel => BinaryClassifier =
+    doLowMemUse => svm => {
+      val cm = calcMarginDist(doLowMemUse)(svm)
       input => cm(input) > 0.0
     }
 
-  lazy val calcMarginDist: SvmDualModel => Vec => Target = {
-    case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
+  lazy val calcMarginDist: Boolean => SvmDualModel => Vec => Target =
+    doLowMemUse => {
+      case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
 
-      val precompAlphhaMultTarget = {
-        import breeze.linalg._
-        DenseVector(alphas: _*) :* DenseVector(targets: _*)
-      }
-      val size = m.size
+        val size = m.size
+        if (doLowMemUse) {
+          input =>
+            {
+              var sum = 0.0
+              cfor(0)(_ < size, _ + 1) { i =>
+                sum += kernel(vectors(i), input) * targets(i) * alphas(i)
+              }
+              sum -= b
+              ///
+              sum
+            }
 
-      input => {
-
-        val resKernelVecInput: DenseVector[Double] = {
-          val x = DenseVector.zeros[Double](size)
-          cfor(0)(_ < size, _ + 1) { i =>
-            x(i) = kernel(vectors(i), input)
+        } else {
+          val precompAlphhaMultTarget = {
+            import breeze.linalg._
+            DenseVector(alphas: _*) :* DenseVector(targets: _*)
           }
-          x
-        }
+          val size = m.size
 
-        val sum: Double = resKernelVecInput dot precompAlphhaMultTarget
-        sum - b
-      }
-  }
+          input => {
+
+            val resKernelVecInput: DenseVector[Double] = {
+              val x = DenseVector.zeros[Double](size)
+              cfor(0)(_ < size, _ + 1) { i =>
+                x(i) = kernel(vectors(i), input)
+              }
+              x
+            }
+
+            val sum: Double = resKernelVecInput dot precompAlphhaMultTarget
+            sum - b
+          }
+        }
+    }
 
   lazy val onSameSide: (Target, Target) => Boolean =
     (y1, y2) => (y1 > 0.0 && y2 > 0.0) || (y1 < 0.0 && y2 < 0.0)
