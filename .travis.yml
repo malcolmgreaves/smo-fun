@@ -1,0 +1,4 @@
+language: scala
+scala: 2.11.8
+script: "sbt clean compile test"
+after_success: "sbt coverage test coveralls"
