@@ -101,34 +101,38 @@ object TrainVisualizeHyperplaneM extends App {
 
   val classifier = svmClassifier(true)(svm)
 
-  val colorPos = awt.Color.RED
-  val colorNeg = awt.Color.BLUE
+  val (colorPredPos, colorPredNeg) = (awt.Color.RED, awt.Color.BLUE)
+  val (colorActPos, colorActNeg) = (awt.Color.ORANGE, awt.Color.GREEN)
 
   val xs = data.map { case (vec, _) => vec(0) }
   val ys = data.map { case (vec, _) => vec(1) }
 
-  val byColor =
-    data
-      .map {
-        case (vec, _) =>
-          (
-            classifier(vec),
-            vec(0),
-            vec(1)
-          )
-      }
-      .groupBy { _._1 }
+  val everything = data.map {
+    case (vec, target) =>
+      (classifier(vec), target > 0.0, vec(0), vec(1))
+  }
 
-  val (predictedPos, predictedNeg) = (
-    byColor.getOrElse(true, Seq.empty),
-    byColor.getOrElse(false, Seq.empty)
-  )
+  val (predictedPos, predictedNeg) = {
+    val byPredict = everything.groupBy { _._1 }
+    (
+      byPredict.getOrElse(true, Seq.empty),
+      byPredict.getOrElse(false, Seq.empty)
+    )
+  }
+
+  val (actualPos, actualNeg) = {
+    val byActual = everything.groupBy { _._2 }
+    (
+      byActual.getOrElse(true, Seq.empty),
+      byActual.getOrElse(false, Seq.empty)
+    )
+  }
 
   import com.quantifind.charts.Highcharts._
   import com.quantifind.charts.highcharts
 
-  lazy val splitXY: Seq[(_, Double, Double)] => (Seq[Double], Seq[Double]) =
-    values => (values.map { _._2 }, values.map { _._3 })
+  lazy val splitXY: Seq[(_, _, Double, Double)] => (Seq[Double], Seq[Double]) =
+    values => (values.map { _._3 }, values.map { _._4 })
 
   def better_scatter(
     x: Seq[Double],
@@ -150,19 +154,39 @@ object TrainVisualizeHyperplaneM extends App {
 
   val sp1 = {
     val (x, y) = splitXY(predictedPos)
-    better_scatter(x, y, colorPos)
+    better_scatter(x, y, colorPredPos)
   }
 
   hold()
 
   val sp2 = {
     val (x, y) = splitXY(predictedNeg)
-    better_scatter(x, y, colorNeg)
+    better_scatter(x, y, colorPredNeg)
   }
 
-  title("TITLE")
+  title("Predicted and Actual")
   yAxis("Feature Value #1")
   xAxis("Feature Value #2")
-  legend(Seq("RED is +", "BLUE is -"))
+
+  legend(Seq("RED is predicted +", "BLUE is predicted -"))
+
+  unhold()
+
+  val sp3 = {
+    val (x, y) = splitXY(actualPos)
+    better_scatter(x, y, colorActPos)
+  }
+
+  hold()
+
+  val sp4 = {
+    val (x, y) = splitXY(actualNeg)
+    better_scatter(x, y, colorActNeg)
+  }
+
+  title("Actual")
+  yAxis("Feature Value #1")
+  xAxis("Feature Value #2")
+  legend(Seq("ORANGE is actual +", "GREEN is actual -"))
 
 }
