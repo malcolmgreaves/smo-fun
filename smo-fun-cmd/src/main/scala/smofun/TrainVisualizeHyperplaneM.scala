@@ -27,7 +27,6 @@ object TrainVisualizeHyperplaneM extends App {
 
   val loc = Try(new File(args(1))).getOrElse(new File("data/SupportVectorMachineWithGaussianKernel_svmlight"))
   val doBalanced = false
-  val doLowMemUse = true
   val doFullAlphaSearch = true
   val c = 1.0
   val tol = 0.001
@@ -36,7 +35,6 @@ object TrainVisualizeHyperplaneM extends App {
     s"""Configuration
         |Using labeled data from:      $loc
         |Doing +/- balanced training?: $doBalanced
-        |Predict w/ low memory use?:   $doLowMemUse
         |Doing Full Alpha_2 Search?:   $doFullAlphaSearch
         |C (cost parameter):           $c
         |Tolerance for Alpha Change:   $tol
@@ -99,7 +97,7 @@ object TrainVisualizeHyperplaneM extends App {
 
   /// Visualize Hyperplane
 
-  val classifier = svmClassifier(true)(svm)
+  val classifier = svmClassifier(svm)
 
   val (colorPredPos, colorPredNeg) = (awt.Color.RED, awt.Color.BLUE)
   val (colorActPos, colorActNeg) = (awt.Color.ORANGE, awt.Color.GREEN)

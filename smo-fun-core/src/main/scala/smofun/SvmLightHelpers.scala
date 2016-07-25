@@ -101,10 +101,10 @@ object SvmLightHelpers {
         s"${svm.b} # threshold b, each following line is a SV (starting with alpha*y)"
       )
 
-      val modelSVs = svm.supportVectors.zip(svm.alphas).zip(svm.targets)
+      val modelSVs = svm.supportVectors.zip(svm.bothAlphaTargets)
         .map {
-          case ((sv, alpha), target) =>
-            s"${alpha * target} ${writeVectorSvmLight(sv)} #"
+          case (sv, bothAlphaTarget) =>
+            s"$bothAlphaTarget ${writeVectorSvmLight(sv)} #"
         }
 
       header ++ modelSVs
@@ -113,19 +113,12 @@ object SvmLightHelpers {
   lazy val parseOut: String => String =
     _.split("#").head.trim
 
-  lazy val parseSV: Dimensionality => String => (DenseVector[Double], Double, Double) =
+  lazy val parseSV: Dimensionality => String => (DenseVector[Double], Double) =
     dims => {
       val parse = parseSvmLightFmt(dims)
       line => {
         val (dv, bothAlphaTarget) = parse(line)
-        val (target, alpha) = {
-          val x = bothAlphaTarget
-          (
-            if (x < 0.0) -1.0 else 1.0,
-            math.abs(x)
-          )
-        }
-        (dv, target, alpha)
+        (dv, bothAlphaTarget)
       }
     }
 
@@ -140,15 +133,14 @@ object SvmLightHelpers {
       val nSvs = parseOut(lines(9)).toInt - 1
       val b = parseOut(lines(10)).toDouble
       // now onto the support vectors!
-      val (svs, targets, alphas) =
+      val (svs, bothATs) =
         lines
           .slice(11, lines.size)
           .map { line => parseSV(dimensionality)(parseOut(line)) }
-          .unzip3
+          .unzip
 
       SvmDualModel(
-        alphas = alphas.toIndexedSeq,
-        targets = targets.toIndexedSeq,
+        bothAlphaTargets = bothATs.toIndexedSeq,
         supportVectors = svs.toIndexedSeq,
         b = b,
         K = SmoHelpers.Kernels.gaussian(sigma)

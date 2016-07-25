@@ -12,7 +12,7 @@ class SanityCheckSmoTest extends FunSuite {
   test("Should memorize on tiny, toy data") {
 
     val (svm, trainingTime) = time { smoSolver(dataToy) }
-    val predict = calcMarginDist(true)(svm)
+    val predict = calcMarginDist(svm)
 
     println(
       s"[Toy] Training using SMO on ${dataToy.size} examples (2D each) took ${trainingTime.toMillis} ms"

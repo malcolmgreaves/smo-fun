@@ -24,13 +24,11 @@ object PredictSavedModelM extends App {
     Try(new File(args(1)))
   ).get
   val out = Try(new File(args(2))).getOrElse(new File("svm_prediction_out"))
-  val doLowMemUse = Try(args(3).toBoolean).getOrElse(true)
   println(
     s"""Command Line Arguments:
        |Using labeled data from:      $loc
        |Using model from:             $model
        |Outputting predictions to:    $out
-       |Low-memory prediction mode?:  $doLowMemUse
      """.stripMargin
   )
 
@@ -43,7 +41,7 @@ object PredictSavedModelM extends App {
     ),
     identity
   )
-  val marginOf = calcMarginDist(doLowMemUse)(svm)
+  val marginOf = calcMarginDist(svm)
   println(
     s"""Loaded SVM model:
        |# Support Vectors: ${svm.size}

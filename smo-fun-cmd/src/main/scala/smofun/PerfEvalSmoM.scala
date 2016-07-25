@@ -23,18 +23,16 @@ object PerfEvalSmoM extends App {
   ).get
   val doBalanced = Try(args(1).toBoolean).getOrElse(true)
   val trainProp = Try(args(2).toDouble).getOrElse(0.75)
-  val doLowMemUse = Try(args(3).toBoolean).getOrElse(true)
-  val doFullAlphaSearch = Try(args(4).toBoolean).getOrElse(true)
-  val c = Try(args(5).toDouble).getOrElse(1.0)
-  val tol = Try(args(6).toDouble).getOrElse(0.001)
-  val sigma = Try(args(7).toDouble).getOrElse(0.5)
-  val outModelFi = Try(args(8)).map { x => new File(x) }.getOrElse(new File("./svm_model_out"))
+  val doFullAlphaSearch = Try(args(3).toBoolean).getOrElse(true)
+  val c = Try(args(4).toDouble).getOrElse(1.0)
+  val tol = Try(args(5).toDouble).getOrElse(0.001)
+  val sigma = Try(args(6).toDouble).getOrElse(0.5)
+  val outModelFi = Try(args(7)).map { x => new File(x) }.getOrElse(new File("./svm_model_out"))
   println(
     s"""Command Line Arguments:
         |Using labeled data from:      $loc
         |Doing +/- balanced training?: $doBalanced
         |Training Proportion:          $trainProp
-        |Predict w/ low memory use?:   $doLowMemUse
         |Doing Full Alpha_2 Search?:   $doFullAlphaSearch
         |C (cost parameter):           $c
         |Tolerance for Alpha Change:   $tol
@@ -105,7 +103,6 @@ object PerfEvalSmoM extends App {
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
           |Found ${svmModel.size} support vectors.
-          |# NaNs from training: ${svmModel.alphas.count { _.isNaN }}
           |Now evaluating against ${test.size} examples.
      """.stripMargin
     )
@@ -114,8 +111,7 @@ object PerfEvalSmoM extends App {
 
   if (!trainOnly) {
     val confMat = {
-      val marginOf = calcMarginDist(doLowMemUse)(svm)
-      val classifier = svmClassifier(doLowMemUse)(svm)
+      val marginOf = calcMarginDist(svm)
       val (metrics, testTime) = time {
         test
           .foldLeft(ConfusionMatrix.zero) {

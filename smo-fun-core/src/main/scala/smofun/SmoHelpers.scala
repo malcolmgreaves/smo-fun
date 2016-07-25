@@ -62,12 +62,12 @@ object SmoHelpers {
   )
 
   case class SvmDualModel(
-      bothAlphaTarget: IndexedSeq[Double],
+      bothAlphaTargets: IndexedSeq[Double],
       supportVectors: IndexedSeq[Vec],
       b: Double,
       K: Kernel
   ) {
-    assert(bothAlphaTarget.size == supportVectors.size)
+    assert(bothAlphaTargets.size == supportVectors.size)
     assert(supportVectors nonEmpty)
 
     val size = supportVectors.size

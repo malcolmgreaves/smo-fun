@@ -373,7 +373,7 @@ object SequentialMinimalOptimization {
     }
 
     SvmDualModel(
-      bothAlphaTarget = nonZeroBothAlphaTarget,
+      bothAlphaTargets = nonZeroBothAlphaTarget,
       supportVectors = vectorsForNZA,
       b = if (!b.isNaN) b else 0.0,
       K = K
