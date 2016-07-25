@@ -79,13 +79,14 @@ object SvmLightHelpers {
   lazy val writeVectorSvmLight: DenseVector[Double] => String = _
     .data
     .zipWithIndex
-    .map { case (v, i) => s"$i:$v" }
+    .map { case (v, i) => s"${i+1}:$v" }
     .mkString(" ")
 
   lazy val asSvmLightFmt: ModelOutInfo => Seq[String] = {
     case (sigma, nTrain, svm) =>
       val header = Seq(
-        "Trained using smo-fun (https://github.com/malcolmgreaves/smo-fun)",
+//        "Trained using smo-fun (https://github.com/malcolmgreaves/smo-fun)",
+        "SVM-light Version V6.02",
         "2 # kernel type",
         "3 # kernel parameter -d",
         s"$sigma # kernel parameter -g",

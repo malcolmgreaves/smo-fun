@@ -3,6 +3,7 @@
 syntehtic_data_svm-light_fmt
 svm_light_cmp
 model-synth
+svm_model*
 
 index-*.html
 plot_data_*
