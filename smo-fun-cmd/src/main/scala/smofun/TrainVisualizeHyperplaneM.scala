@@ -3,8 +3,8 @@ package smofun
 import java.awt
 import java.io.File
 
-import breeze.linalg.{DenseVector, SparseVector}
-import com.quantifind.charts.highcharts.{Highchart, Series, SeriesType}
+import breeze.linalg.{ DenseVector, SparseVector }
+import com.quantifind.charts.highcharts.{ Highchart, Series, SeriesType }
 import com.quantifind.charts.repl.IterablePair
 import smofun.SequentialMinimalOptimization._
 import smofun.SmoHelpers.Kernels._
@@ -103,7 +103,6 @@ object TrainVisualizeHyperplaneM extends App {
     svmModel
   }
 
-
   /// Visualize Hyperplane
 
   val classifier = svmClassifier(true)(svm)
@@ -112,21 +111,21 @@ object TrainVisualizeHyperplaneM extends App {
   val colorNeg = awt.Color.BLUE
 
   val xs = data.map { case (vec, _) => vec(0) }
-  val ys =  data.map { case (vec, _) => vec(1) }
+  val ys = data.map { case (vec, _) => vec(1) }
 
   val byColor =
     data
       .map {
         case (vec, _) =>
           (
-            if(classifier(vec)) colorPos else colorNeg,
+            classifier(vec),
             vec(0),
             vec(1)
           )
       }
       .groupBy { _._1 }
 
-  val (predictedPos, predictedNeg) = (byColor(colorPos),byColor(colorNeg))
+  val (predictedPos, predictedNeg) = (byColor(true), byColor(false))
 
   import com.quantifind.charts.Highcharts._
   import com.quantifind.charts.highcharts
@@ -135,10 +134,10 @@ object TrainVisualizeHyperplaneM extends App {
     values => (values.map { _._2 }, values.map { _._3 })
 
   def better_scatter(
-                      x: Seq[Double],
-                      y: Seq[Double],
-                      color: awt.Color
-                    ): Highchart = {
+    x: Seq[Double],
+    y: Seq[Double],
+    color: awt.Color
+  ): Highchart = {
 
     import Highchart._
     plot(
@@ -152,18 +151,15 @@ object TrainVisualizeHyperplaneM extends App {
     )
   }
 
-
-
-
   val sp1 = {
-    val (x,y) = splitXY(predictedPos)
+    val (x, y) = splitXY(predictedPos)
     better_scatter(x, y, colorPos)
   }
 
   hold()
 
   val sp2 = {
-    val (x,y) = splitXY(predictedNeg)
+    val (x, y) = splitXY(predictedNeg)
     better_scatter(x, y, colorNeg)
   }
 
