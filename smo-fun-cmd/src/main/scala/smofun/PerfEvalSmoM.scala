@@ -45,7 +45,6 @@ object PerfEvalSmoM extends App {
     doFullAlphaSearch = doFullAlphaSearch
   )
 
-
   ////////
 
   val dimensionality = calculateDimensionality(loc)

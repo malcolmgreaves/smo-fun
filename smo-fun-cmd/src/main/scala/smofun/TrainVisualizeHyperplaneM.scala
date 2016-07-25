@@ -55,11 +55,11 @@ object TrainVisualizeHyperplaneM extends App {
   val parse = parseSvmLightFmt(dimensionality)
 
   val data = shuffle {
-      Source
-        .fromFile(loc)
-        .getLines()
-        .map { parse }
-        .toSeq
+    Source
+      .fromFile(loc)
+      .getLines()
+      .map { parse }
+      .toSeq
   }
 
   println(
@@ -80,8 +80,5 @@ object TrainVisualizeHyperplaneM extends App {
   }
 
   /// Visualize Hyperplane
-
-
-
 
 }

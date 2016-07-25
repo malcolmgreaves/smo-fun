@@ -1,6 +1,5 @@
 package smofun
 
-
 import smofun.SmoHelpers._
 
 import scala.language.postfixOps
