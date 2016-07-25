@@ -18,14 +18,15 @@ object PerfEvalSmoM extends App {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  val loc = new File("data/SupportVectorMachineWithGaussianKernel_svmlight")
-  val doBalanced = false
-  val trainProp = 0.75
-  val doLowMemUse = true
-  val doFullAlphaSearch = true
+  val loc = new File(args.head)
+  val doBalanced = Try(args(1).toBoolean).getOrElse(true)
+  val trainProp = Try(args(2).toDouble).getOrElse(0.75)
+  val doLowMemUse = Try(args(3).toBoolean).getOrElse(true)
+  val doFullAlphaSearch = Try(args(4).toBoolean).getOrElse(true)
   val c = Try(args(5).toDouble).getOrElse(1.0)
   val tol = Try(args(6).toDouble).getOrElse(0.001)
   val sigma = Try(args(7).toDouble).getOrElse(0.5)
+  val outModelFi = Try(args(8)).map { x => new File(x) }.getOrElse(new File("./svm_model_out"))
   println(
     s"""Command Line Arguments:
        |Using labeled data from:      $loc
@@ -36,6 +37,7 @@ object PerfEvalSmoM extends App {
        |C (cost parameter):           $c
        |Tolerance for Alpha Change:   $tol
        |S.D. of Gaussian Kernel:      $sigma
+       |Outputting model to:          $outModelFi
      """.stripMargin
   )
   val conf = SvmConfig(
@@ -128,17 +130,25 @@ object PerfEvalSmoM extends App {
     val (precision, recall, f1) = calcPerf(confMat)
     import confMat._
     s"""Performance:
-              |        +    |   -
-              |     ---------------
-              | T  |  $tp   | $tn  |
-       |---------------------
-              | F  |  $fp   | $fn  |
-       |    ----------------
-              |
-       |Precision: ${precision * 100.0} %
-              |Recall:    ${recall * 100.0} %
-              |F1:        ${f1 * 100.0} %
-     """.stripMargin
+        |        +    |   -
+        |     ----------------- d
+        | T  |  $tp   |  $tn   |
+        |-----------------------
+        | F  |  $fp   |  $fn   |
+        |    ------------------
+        |
+        |Precision: ${precision * 100.0} %
+        |Recall:    ${recall * 100.0} %
+        |F1:        ${f1 * 100.0} %
+        |""".stripMargin
   }
+
+  writeModel(sigma, train.size, svm)(outModelFi).fold(
+    e => {
+      println(s"Failed to write out model due to: $e")
+      throw e
+    },
+    _ => println("Successfully wrote out model.")
+  )
 
 }
