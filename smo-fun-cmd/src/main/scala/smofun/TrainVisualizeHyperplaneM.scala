@@ -119,7 +119,10 @@ object TrainVisualizeHyperplaneM extends App {
       }
       .groupBy { _._1 }
 
-  val (predictedPos, predictedNeg) = (byColor(true), byColor(false))
+  val (predictedPos, predictedNeg) = (
+    byColor.getOrElse(true, Seq.empty),
+    byColor.getOrElse(false, Seq.empty)
+  )
 
   import com.quantifind.charts.Highcharts._
   import com.quantifind.charts.highcharts
