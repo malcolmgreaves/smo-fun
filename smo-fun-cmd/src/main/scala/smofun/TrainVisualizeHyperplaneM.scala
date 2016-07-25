@@ -164,7 +164,7 @@ object TrainVisualizeHyperplaneM extends App {
     better_scatter(x, y, colorPredNeg)
   }
 
-  title("Predicted and Actual")
+  title("Predicted")
   yAxis("Feature Value #1")
   xAxis("Feature Value #2")
 
