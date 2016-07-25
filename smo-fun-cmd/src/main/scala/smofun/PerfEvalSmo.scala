@@ -14,9 +14,9 @@ object PerfEvalSmo extends App {
   import SvmLightHelpers._
 
   val conf = SvmConfig(
-    C = 1.25,
+    C = 0.99999,
     tolerance = 0.001,
-    K = gaussian(0.05),
+    K = gaussian(1.5),
     doFullAlphaSearch = false
   )
 
@@ -33,48 +33,52 @@ object PerfEvalSmo extends App {
   val dimensionality = calculateDimensionality(loc)
   val parse = parseSvmLightFmt(dimensionality)
 
-  val data: Seq[(Vec, Target)] =
-    Source
-      .fromFile(loc)
-      .getLines()
-      .map { parse }
-      .toSeq
+  def shuffle[T](xs: Seq[T]): Seq[T] =
+    xs
+      .map { x => (x, Random.nextInt()) }
+      .sortBy { _._2 }
+      .map { _._1 }
 
-  val (train, test) = {
+  lazy val splitPosNeg = (xs: Seq[(Vec, Target)]) =>
+    (
+      xs.filter { _._2 > 0.0 },
+      xs.filter { _._2 < 0.0 }
+    )
 
-    val shuffled =
-      data
-        .map { x => (x, Random.nextInt()) }
-        .sortBy { _._2 }
-        .map { _._1 }
-
-    val pos = shuffled.filter { _._2 > 0.0 }
-    val neg = shuffled.filter { _._2 < 0.0 }
-
-    val balanced =
+  lazy val mkBalanced: (Seq[(Vec, Target)], Seq[(Vec, Target)]) => Seq[(Vec, Target)] =
+    (pos, neg) =>
       if (pos.size < neg.size)
         pos ++ neg.slice(0, pos.size)
       else
         pos.slice(0, neg.size) ++ neg
 
+  lazy val splitTrainTest = (prop: Double) => (xs: Seq[(Vec, Target)]) => {
+    val splitIndx = (xs.size * prop).round.toInt
+    (
+      xs.slice(0, splitIndx),
+      xs.slice(splitIndx, xs.size)
+    )
+  }
+
+  val (train, test) = {
+    val data: Seq[(Vec, Target)] =
+      Source
+        .fromFile(loc)
+        .getLines()
+        .map { parse }
+        .toSeq
+    val shuffled = shuffle(data)
+    val (pos, neg) = splitPosNeg(shuffled)
+    val balanced = mkBalanced(pos, neg)
+    val trainProp = 0.75
     println(
       s"""${pos.size} + examples and ${neg.size} - examples
          |Balanced size: ${balanced.size}
+         |Using ${trainProp * 100.0} % for training, rest for test.
        """.stripMargin
     )
 
-    (balanced, balanced)
-
-    //    val splitIndx = {
-    //      val trainProp = 0.75
-    //      println(s"Using ${trainProp * 100.0} % for training, rest for test")
-    //      (shuffled.size * trainProp).round.toInt
-    //    }
-    //
-    //    (
-    //      shuffled.slice(0, splitIndx),
-    //      shuffled.slice(splitIndx, shuffled.size)
-    //    )
+    splitTrainTest(trainProp)(balanced)
   }
 
   println(
