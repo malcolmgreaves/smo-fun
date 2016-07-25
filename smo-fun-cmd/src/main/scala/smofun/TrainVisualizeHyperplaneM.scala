@@ -30,7 +30,7 @@ object TrainVisualizeHyperplaneM extends App {
   val doFullAlphaSearch = true
   val c = 1.0
   val tol = 0.001
-  val sigma = Try(args.head.toDouble).getOrElse(0.01)
+  val gamma = Try(args.head.toDouble).getOrElse(0.01)
   println(
     s"""Configuration
         |Using labeled data from:      $loc
@@ -38,14 +38,14 @@ object TrainVisualizeHyperplaneM extends App {
         |Doing Full Alpha_2 Search?:   $doFullAlphaSearch
         |C (cost parameter):           $c
         |Tolerance for Alpha Change:   $tol
-        |S.D. of Gaussian Kernel:      $sigma
+        |Gamma for RBF Kernel:         $gamma
      """.stripMargin
   )
   val smoSolver = SequentialMinimalOptimization.train(
     SvmConfig(
       C = c,
       tolerance = tol,
-      K = gaussian(sigma),
+      K = rbf(gamma),
       doFullAlphaSearch = doFullAlphaSearch
     )
   ) _

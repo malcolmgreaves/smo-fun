@@ -26,7 +26,7 @@ object PerfEvalSmoM extends App {
   val doFullAlphaSearch = Try(args(3).toBoolean).getOrElse(true)
   val c = Try(args(4).toDouble).getOrElse(1.0)
   val tol = Try(args(5).toDouble).getOrElse(0.001)
-  val sigma = Try(args(6).toDouble).getOrElse(0.5)
+  val gamma = Try(args(6).toDouble).getOrElse(0.5)
   val outModelFi = Try(args(7)).map { x => new File(x) }.getOrElse(new File("./svm_model_out"))
   println(
     s"""Command Line Arguments:
@@ -36,14 +36,14 @@ object PerfEvalSmoM extends App {
         |Doing Full Alpha_2 Search?:   $doFullAlphaSearch
         |C (cost parameter):           $c
         |Tolerance for Alpha Change:   $tol
-        |S.D. of Gaussian Kernel:      $sigma
+        |Gamma for RBF Kernel:         $gamma
         |Outputting model to:          $outModelFi
      """.stripMargin
   )
   val conf = SvmConfig(
     C = c,
     tolerance = tol,
-    K = gaussian(sigma),
+    K = rbf(gamma),
     doFullAlphaSearch = doFullAlphaSearch
   )
 
@@ -149,7 +149,7 @@ object PerfEvalSmoM extends App {
     }
   }
 
-  writeModel(sigma, train.size, svm)(outModelFi).fold(
+  writeModel(gamma, train.size, svm)(outModelFi).fold(
     e => {
       println(s"Failed to write out model due to: $e")
       throw e

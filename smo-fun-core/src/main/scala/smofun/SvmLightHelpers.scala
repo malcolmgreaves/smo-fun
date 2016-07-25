@@ -85,13 +85,13 @@ object SvmLightHelpers {
   type ModelOutInfo = (Double, Int, SvmDualModel)
 
   lazy val asSvmLightFmt: ModelOutInfo => Seq[String] = {
-    case (sigma, nTrain, svm) =>
+    case (gamma, nTrain, svm) =>
       val header = Seq(
         //        "Trained using smo-fun (https://github.com/malcolmgreaves/smo-fun)",
         "SVM-light Version V6.02",
         "2 # kernel type",
         "3 # kernel parameter -d",
-        s"$sigma # kernel parameter -g",
+        s"$gamma # kernel parameter -g",
         "1 # kernel parameter -s",
         "1 # kernel parameter -r",
         "empty# kernel parameter -u",
@@ -126,7 +126,7 @@ object SvmLightHelpers {
     lines => \/.fromTryCatchNonFatal {
       // ignore lines(0)
       // ignore lines(1-2) TODO handle more kernels
-      val sigma = parseOut(lines(3)).toDouble
+      val gamma = parseOut(lines(3)).toDouble
       // ignore lines(4-6) TODO handle more kernels
       val dimensionality = Tag[Int, Dim](parseOut(lines(7)).toInt)
       // ignore lines(8)
@@ -143,7 +143,7 @@ object SvmLightHelpers {
         bothAlphaTargets = bothATs.toIndexedSeq,
         supportVectors = svs.toIndexedSeq,
         b = b,
-        K = SmoHelpers.Kernels.gaussian(sigma)
+        K = SmoHelpers.Kernels.rbf(gamma)
       )
     }
 
