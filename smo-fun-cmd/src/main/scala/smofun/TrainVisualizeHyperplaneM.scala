@@ -25,19 +25,17 @@ object TrainVisualizeHyperplaneM extends App {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  val loc = new File("data/SupportVectorMachineWithGaussianKernel_svmlight")
+  val loc = Try(new File(args(1))).getOrElse(new File("data/SupportVectorMachineWithGaussianKernel_svmlight"))
   val doBalanced = false
-  val trainProp = 0.75
   val doLowMemUse = true
   val doFullAlphaSearch = true
   val c = 1.0
   val tol = 0.001
-  val sigma = 0.01
+  val sigma = Try(args.head.toDouble).getOrElse(0.01)
   println(
     s"""Configuration
         |Using labeled data from:      $loc
         |Doing +/- balanced training?: $doBalanced
-        |Training Proportion:          $trainProp
         |Predict w/ low memory use?:   $doLowMemUse
         |Doing Full Alpha_2 Search?:   $doFullAlphaSearch
         |C (cost parameter):           $c
@@ -69,11 +67,7 @@ object TrainVisualizeHyperplaneM extends App {
     val shuffled = shuffle(origData)
     val (pos, neg) = splitPosNeg(shuffled)
 
-    println(
-      s"""${pos.size} + examples and ${neg.size} - examples
-         |Using ${trainProp * 100.0} % for training, rest for test.
-       """.stripMargin
-    )
+    println(s"${pos.size} + examples and ${neg.size} - examples")
 
     val finalLabeledData =
       if (doBalanced) {
@@ -166,5 +160,6 @@ object TrainVisualizeHyperplaneM extends App {
   title("TITLE")
   yAxis("Feature Value #1")
   xAxis("Feature Value #2")
+  legend(Seq("RED is +", "BLUE is -"))
 
 }
