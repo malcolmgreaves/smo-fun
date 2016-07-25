@@ -13,6 +13,8 @@ object SvmLightHelpers {
   sealed trait Dim
   type Dimensionality = Int @@ Dim
 
+  type E[T] = \/[Throwable, T]
+
   lazy val whitespaceSplit: String => Seq[String] =
     _.split("\\s+").toSeq
 
@@ -74,10 +76,39 @@ object SvmLightHelpers {
       }
     }
 
-  lazy val asSvmLightFmt: SvmDualModel => Seq[String] =
-    svm => ???
+  lazy val writeVectorSvmLight: DenseVector[Double] => String = _
+    .data
+    .zipWithIndex
+    .map { case (v, i) => s"$i:$v" }
+    .mkString(" ")
 
-  lazy val parseOut = (s: String) => s.split("#").head
+  lazy val asSvmLightFmt: ModelOutInfo => Seq[String] = {
+    case (sigma, nTrain, svm) =>
+      val header = Seq(
+        "Trained using smo-fun (https://github.com/malcolmgreaves/smo-fun)",
+        "2 # kernel type",
+        "3 # kernel parameter -d",
+        s"$sigma # kernel parameter -g",
+        "1 # kernel parameter -s",
+        "1 # kernel parameter -r",
+        "empty# kernel parameter -u",
+        s"${svm.vectors.head.data.length} # highest feature index",
+        s"$nTrain # number of training documents",
+        s"${svm.size + 1} # number of support vectors plus 1",
+        s"${svm.b} # threshold b, each following line is a SV (starting with alpha*y)"
+      )
+
+      val modelSVs = svm.vectors.zip(svm.alphas).zip(svm.targets)
+        .map {
+          case ((sv, alpha), target) =>
+            s"${alpha * target} ${writeVectorSvmLight(sv)} #"
+        }
+
+      header ++ modelSVs
+  }
+
+  lazy val parseOut: String => String =
+    _.split("#").head.trim
 
   lazy val parseSV: Int => String => (DenseVector[Double], Double, Double) =
     dims => line => {
@@ -127,12 +158,12 @@ object SvmLightHelpers {
       )
     }
 
-  type E[T] = \/[Throwable, T]
+  type ModelOutInfo = (Double, Int, SvmDualModel)
 
-  lazy val writeModel: SvmDualModel => File => E[Unit] =
-    svm => fi => \/.fromTryCatchNonFatal {
+  lazy val writeModel: ModelOutInfo => File => E[Unit] =
+    mo => fi => \/.fromTryCatchNonFatal {
       val w = new BufferedWriter(new FileWriter(fi))
-      asSvmLightFmt(svm).foreach { line =>
+      asSvmLightFmt(mo).foreach { line =>
         w.write(line)
         w.newLine()
       }
