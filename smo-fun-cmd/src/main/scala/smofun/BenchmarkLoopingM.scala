@@ -11,7 +11,7 @@ import spire.syntax.cfor._
 import scala.concurrent.duration.Duration
 import scala.util.{ Random, Try }
 
-object BenchmarkLooping extends App {
+object BenchmarkLoopingM extends App {
 
   import BenchmarkHelpers._
   import fif.ImplicitCollectionsData._
