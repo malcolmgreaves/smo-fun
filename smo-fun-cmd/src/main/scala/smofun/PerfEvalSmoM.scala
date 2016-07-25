@@ -9,7 +9,7 @@ import scala.io.Source
 import scala.language.postfixOps
 import scala.util.{ Random, Try }
 
-object PerfEvalSmo extends App {
+object PerfEvalSmoM extends App {
 
   import SvmLightHelpers._
 
