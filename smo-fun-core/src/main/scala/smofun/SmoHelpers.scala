@@ -80,15 +80,25 @@ object SmoHelpers {
 
   lazy val calcMarginDist: SvmDualModel => Vec => Target = {
     case m @ SvmDualModel(alphas, targets, vectors, b, kernel) =>
+
+      val precompAlphhaMultTarget = {
+        import breeze.linalg._
+        DenseVector(alphas: _*) :* DenseVector(targets: _*)
+      }
       val size = m.size
+
       input => {
-        var sum = 0.0
-        cfor(0)(_ < size, _ + 1) { i =>
-          sum += kernel(vectors(i), input) * targets(i) * alphas(i)
+
+        val resKernelVecInput: DenseVector[Double] = {
+          val x = DenseVector.zeros[Double](size)
+          cfor(0)(_ < size, _ + 1) { i =>
+            x(i) = kernel(vectors(i), input)
+          }
+          x
         }
-        sum -= b
-        ///
-        sum
+
+        val sum: Double = resKernelVecInput dot precompAlphhaMultTarget
+        sum - b
       }
   }
 

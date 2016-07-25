@@ -14,9 +14,9 @@ object PerfEvalSmo extends App {
   import SvmLightHelpers._
 
   val conf = SvmConfig(
-    C = 5.0,
+    C = 1.0,
     tolerance = 0.001,
-    K = gaussian(1.5),
+    K = gaussian(0.1),
     doFullAlphaSearch = false
   )
 
@@ -28,7 +28,7 @@ object PerfEvalSmo extends App {
     new File(Try(args.head).getOrElse("./data/diabetes"))
   }
 
-  println(s"Using training data from: $loc")
+  println(s"Using labeled data from: $loc")
 
   val dimensionality = calculateDimensionality(loc)
   val parse = parseSvmLightFmt(dimensionality)
