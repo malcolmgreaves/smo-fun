@@ -97,19 +97,18 @@ object PerfEvalSmoM extends App {
       s"""Training on ${train.size} vectors, each of length $dimensionality
           |Using the following SVM training configuration:
           |$conf
-     """.stripMargin
+          |""".stripMargin
     )
     val (svmModel, trainTime) = time { smoSolver(train) }
     println(
       s"""Finished training in ${trainTime.toSeconds} seconds.
-          |Found ${svmModel.size} support vectors.
-          |Now evaluating against ${test.size} examples.
-     """.stripMargin
+          |Found ${svmModel.size} support vectors.""".stripMargin
     )
     svmModel
   }
 
   if (!trainOnly) {
+    println(s"Now evaluating against ${test.size} examples.")
     val confMat = {
       val marginOf = calcMarginDist(svm)
       val (metrics, testTime) = time {
