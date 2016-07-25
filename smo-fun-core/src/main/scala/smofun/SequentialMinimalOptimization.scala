@@ -18,7 +18,7 @@ object SequentialMinimalOptimization {
     val size = data.size
     val alphas = DenseVector[Double](Initialize.uniform(size)(Random.self))
 
-    /** Non-bound example means its alpha is NOT ZERO and NOT C. */
+    // Non-bound example means its alpha is NOT ZERO and NOT C.
     @inline def calculateNonBoundExamples(): Array[Int] = {
 
       val x = new mutable.ArrayBuffer[Int]()
