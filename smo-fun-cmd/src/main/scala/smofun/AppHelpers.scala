@@ -50,12 +50,27 @@ object AppHelpers {
     }
   }
 
-  case class ConfusionMatrix(tp: Int, fp: Int, tn: Int, fn: Int)
+  case class ConfusionMatrix(tp: Int, fp: Int, tn: Int, fn: Int) {
+
+    def addTruePositive(x: Int = 1): ConfusionMatrix =
+      copy(tp = tp + x)
+
+    def addFalsePositive(x: Int = 1): ConfusionMatrix =
+      copy(fp = fp + x)
+
+    def addTrueNegative(x: Int = 1): ConfusionMatrix =
+      copy(tn = tn + x)
+
+    def addFalseNegative(x: Int = 1): ConfusionMatrix =
+      copy(fn = fn + x)
+  }
+
   object ConfusionMatrix {
     val zero = ConfusionMatrix(0, 0, 0, 0)
   }
 
-  lazy val calcPerf: ConfusionMatrix => (Double, Double, Double) =
+  type PrecisionRecallF1 = (Double, Double, Double)
+  lazy val calcPerf: ConfusionMatrix => PrecisionRecallF1 =
     cm => {
       import cm._
 
