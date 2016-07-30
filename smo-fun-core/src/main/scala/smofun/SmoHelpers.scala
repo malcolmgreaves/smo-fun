@@ -141,6 +141,33 @@ object SmoHelpers {
         (v1, v2) => {
           val diff = v1 - v2
           math.exp(
+            precomp * (sqEuclidNorm(v1) + sqEuclidNorm(v2) - 2.0 * sprod(v1, v2))
+          )
+        }
+      }
+
+    lazy val sqEuclidNorm: Vec => Double =
+      v => sprod(v, v)
+
+    lazy val sprod: (Vec, Vec) => Double =
+      (v1, v2) => {
+        assert(v1.length == v2.length)
+        val size = v1.length
+        var sum = 0.0
+        cfor(0)(_ < size, _ + 1) { i =>
+          sum += v1(i) * v2(i)
+        }
+        sum
+      }
+
+    @Deprecated
+    lazy val rbf_OLD: Gamma => Kernel =
+      gamma => {
+        assert(gamma > 0.0)
+        val precomp = -gamma
+        (v1, v2) => {
+          val diff = v1 - v2
+          math.exp(
             precomp * math.sqrt(diff.dot(diff))
           )
         }
