@@ -134,53 +134,13 @@ object SmoHelpers {
     lazy val linear: Kernel = (v1, v2) => v1.dot(v2)
 
     type Gamma = Double
-    lazy val rbf: Gamma => Kernel = rbf_NEW_IMPL
-
-    lazy val rbf_blas: Gamma => Kernel =
+    lazy val rbf: Gamma => Kernel =
       gamma => {
         assert(gamma > 0.0)
         val negGamma = -gamma
         (v1, v2) => {
           val x = negGamma * (v1.dot(v1) + v2.dot(v2) - 2.0 * v1.dot(v2))
           math.expm1(x) + 1.0
-        }
-      }
-
-    lazy val rbf_NEW_IMPL: Gamma => Kernel =
-      gamma => {
-        assert(gamma > 0.0)
-        val precomp = -gamma
-        (v1, v2) => {
-          math.exp(
-            precomp * (sqEuclidNorm(v1) + sqEuclidNorm(v2) - 2.0 * sprod(v1, v2))
-          )
-        }
-      }
-
-    lazy val sqEuclidNorm: Vec => Double =
-      v => sprod(v, v)
-
-    lazy val sprod: (Vec, Vec) => Double =
-      (v1, v2) => {
-        assert(v1.length == v2.length)
-        val size = v1.length
-        var sum = 0.0
-        cfor(0)(_ < size, _ + 1) { i =>
-          sum += v1(i) * v2(i)
-        }
-        sum
-      }
-
-    @Deprecated
-    lazy val rbf_OLD: Gamma => Kernel =
-      gamma => {
-        assert(gamma > 0.0)
-        val precomp = -gamma
-        (v1, v2) => {
-          val diff = v1 - v2
-          math.exp(
-            precomp * math.sqrt(diff.dot(diff))
-          )
         }
       }
 
