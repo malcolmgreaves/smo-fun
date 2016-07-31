@@ -14,24 +14,21 @@ object SharedBuild {
   // //    Dependencies   // //
   // // // // // // // // // //
 
-  lazy val scalaMacros = "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
+  lazy val scalaMacros =
+    "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full
 
-  lazy val avroCodegen = "com.gonitro" %% "avro-codegen-runtime" % "0.3.4"
-  lazy val shapeless   = "com.chuusai" %% "shapeless"            % "2.2.5"
-
-  lazy val miscDeps = Seq(
-    "io.malcolmgreaves"    %% "abstract_data" % dataV,
-    "io.argonaut"          %% "argonaut"      % "6.1",
-    "org.scalaj"           %% "scalaj-http"   % "2.2.1",
-    "com.github.mpilquist" %% "simulacrum"    % "0.7.0"  
-  ) :+ shapeless
-
-  lazy val mathMlDeps = Seq(
-    "org.scalanlp"   %% "breeze"         % breezeV,
-    "org.scalanlp"   %% "breeze-natives" % breezeV,
-    "org.scalanlp"   %% "nak"            % "1.3",
-    "com.quantifind" %% "wisp"           % "0.0.4"
+  lazy val mainDeps = Seq(
+    "org.spire-math" %% "spire"       % "0.11.0",
+    "org.scalaz"     %% "scalaz-core" % "7.2.4",
+    "org.scalanlp"   %% "breeze"      % breezeV
   )
+
+  lazy val cmdProjAddDeps = Seq(
+    "com.quantifind"    %% "wisp"           % "0.0.4",
+    "io.malcolmgreaves" %% "abstract_data"  % dataV,
+    "org.scalanlp"      %% "breeze-natives" % breezeV
+  )
+
 
   lazy val testDeps = Seq(
     "org.scalatest" %% "scalatest" % "2.2.6" % Test

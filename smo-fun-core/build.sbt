@@ -9,8 +9,7 @@ com.typesafe.sbt.SbtScalariform.defaultScalariformSettings
 addCompilerPlugin(scalaMacros)
 
 libraryDependencies ++= 
-  miscDeps   ++
-  mathMlDeps ++
+  mainDeps ++
   testDeps
 
 //
