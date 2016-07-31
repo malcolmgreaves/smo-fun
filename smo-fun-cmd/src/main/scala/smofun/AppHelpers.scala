@@ -51,28 +51,54 @@ object AppHelpers {
   }
 
   case class ConfusionMatrix(tp: Int, fp: Int, tn: Int, fn: Int)
+
   object ConfusionMatrix {
+
     val zero = ConfusionMatrix(0, 0, 0, 0)
+
+    implicit class Increment(val cm: ConfusionMatrix) extends AnyVal {
+
+      def addTruePositive(x: Int = 1): ConfusionMatrix =
+        cm.copy(tp = cm.tp + x)
+
+      def addFalsePositive(x: Int = 1): ConfusionMatrix =
+        cm.copy(fp = cm.fp + x)
+
+      def addTrueNegative(x: Int = 1): ConfusionMatrix =
+        cm.copy(tn = cm.tn + x)
+
+      def addFalseNegative(x: Int = 1): ConfusionMatrix =
+        cm.copy(fn = cm.fn + x)
+    }
   }
 
-  lazy val calcPerf: ConfusionMatrix => (Double, Double, Double) =
+  case class Metrics(
+    precision: Double,
+    recall: Double,
+    f1: Double,
+    accuracy: Double
+  )
+
+  lazy val calcPerf: ConfusionMatrix => Metrics =
     cm => {
       import cm._
-
-      val (precision, recall) = {
-        val tpD = tp.toDouble
-        (
-          if (tp == 0 && fp == 0) 0.0 else tpD / (tpD + fp),
-          if (tp == 0 && tn == 0) 0.0 else tpD / (tpD + tn)
-        )
-      }
-      val f1 =
+      val tpD = tp.toDouble
+      val p = if (tp == 0 && fp == 0) 0.0 else tpD / (tpD + fp)
+      val r = if (tp == 0 && tn == 0) 0.0 else tpD / (tpD + fn)
+      Metrics(
+        precision = p,
+        recall = r,
+        f1 =
         if (tp == 0 && (fp == 0 || fn == 0))
           0.0
         else
-          (2.0 * precision * recall) / (precision + recall)
-
-      (precision, recall, f1)
+          (2.0 * p * r) / (p + r),
+        accuracy =
+        if (tp == 0 && fp == 0 && tn == 0 && fn == 0)
+          0.0
+        else
+          (tpD + tn) / (tpD + tn + fp + fn)
+      )
     }
 
   lazy val checksOutAsFile: (Int, String) => Try[File] => Try[File] =

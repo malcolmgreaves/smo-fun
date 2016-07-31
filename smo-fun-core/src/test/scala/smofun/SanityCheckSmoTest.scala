@@ -47,7 +47,7 @@ object SanityCheckSmoTest {
     SvmConfig(
       C = 1.0,
       tolerance = 0.0001,
-      K = rbf(1.0)
+      K = rbf(0.5)
     )
   ) _
 

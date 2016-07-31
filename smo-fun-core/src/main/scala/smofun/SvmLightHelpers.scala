@@ -95,10 +95,10 @@ object SvmLightHelpers {
         "1 # kernel parameter -s",
         "1 # kernel parameter -r",
         "empty# kernel parameter -u",
-        s"${svm.supportVectors.head.data.length} # highest feature index",
+        s"${svm.supportVectors.head.data.length} # highest feature index, svm-light does 1-based indexing :*(",
         s"$nTrain # number of training documents",
         s"${svm.size + 1} # number of support vectors plus 1",
-        s"${svm.b} # threshold b, each following line is a SV (starting with alpha*y)"
+        s"${svm.b} # threshold b, each following line is a SV (starting with alpha*y then the features in the index:value space-delim. format)"
       )
 
       val modelSVs = svm.supportVectors.zip(svm.bothAlphaTargets)

@@ -137,12 +137,10 @@ object SmoHelpers {
     lazy val rbf: Gamma => Kernel =
       gamma => {
         assert(gamma > 0.0)
-        val precomp = -gamma
+        val negGamma = -gamma
         (v1, v2) => {
-          val diff = v1 - v2
-          math.exp(
-            precomp * math.sqrt(diff.dot(diff))
-          )
+          val x = negGamma * (v1.dot(v1) + v2.dot(v2) - 2.0 * v1.dot(v2))
+          math.expm1(x) + 1.0
         }
       }
 
