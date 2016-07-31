@@ -97,7 +97,8 @@ object PredictSavedModelM extends App {
     }
 
     println {
-      val (precision, recall, f1) = calcPerf(confMat)
+      val metrics = calcPerf(confMat)
+      import metrics._
       import confMat._
       s"""Performance:
           |        +    |   -       <- [Predicted]
@@ -112,6 +113,7 @@ object PredictSavedModelM extends App {
           |Precision: ${precision * 100.0} %
           |Recall:    ${recall * 100.0} %
           |F1:        ${f1 * 100.0} %
+          |Accuracy:  ${accuracy * 100.0} %
           |""".stripMargin
     }
 
