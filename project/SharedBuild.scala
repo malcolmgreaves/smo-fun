@@ -47,7 +47,7 @@ object SharedBuild {
     publishMavenStyle       := true,
     isSnapshot              := false,
     publishArtifact in Test := false,
-    publishTo               := Some("Sonatype Releases"  at "https://oss.sonatype.org/content/repositories/releases/"),
+    publishTo               := Some("Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"),
     pomIncludeRepository    := { _ => false },
     pomExtra                := {
       <url>https://github.com/{ ri.group }/{ ri.name }</url>
@@ -70,7 +70,8 @@ object SharedBuild {
             <url>https://malcolmgreaves.io/</url>
           </developer>
         </developers>
-    }
+    },
+    publishArtifact         := true
   )
 
   lazy val noPublish = Seq(
