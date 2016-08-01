@@ -1,5 +1,6 @@
-name := "smo-fun"
+name := ""
 
+import SharedBuild.{ doPublish, noPublish, RepoInfo }
 com.typesafe.sbt.SbtScalariform.defaultScalariformSettings
 
 scalaVersion in ThisBuild := "2.11.8"
@@ -17,24 +18,18 @@ lazy val root = project
     `smo-fun-cmd`,
     `smo-fun-core`
   )
-  .settings {
-    publishArtifact := false
-    publishLocal    := {}
-    publish         := {}
-  }
+  .settings { noPublish }
 
 lazy val `smo-fun-core` = project
   .in(file("smo-fun-core"))
-  .settings { 
-    publishArtifact := true
+  .settings {
+    doPublish(RepoInfo(group = "malcolmgreaves", name = "smo-fun"))
   }
 
 lazy val `smo-fun-cmd` = project
   .in(file("smo-fun-cmd"))
   .dependsOn(`smo-fun-core`)
-  .settings {
-    publishArtifact := true
-  }
+  .settings { noPublish }
 
 lazy val subprojects: Seq[ProjectReference] = root.aggregate
 lazy val publishTasks = subprojects.map { publish.in }

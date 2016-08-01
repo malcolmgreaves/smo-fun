@@ -1,4 +1,4 @@
-name := "smo-fun-core"
+name := "smo-fun"
 
 import sbt._
 import Keys._
