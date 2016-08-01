@@ -20,6 +20,9 @@ This repository is split into subprojects:
 * [smo-fun-cmd](https://github.com/malcolmgreaves/smo-fun/tree/master/smo-fun-cmd)
   * contains command line applications that use the code from `smo-fun-core`
   * intended to be used as a suite of tools to assist fellow machine learniner practitioners
+ 
+### Versioning
+Only the `smo-fun-core` project adheres to the published version semantics.
 
 # Legal
 
