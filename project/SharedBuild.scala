@@ -47,7 +47,13 @@ object SharedBuild {
     publishMavenStyle       := true,
     isSnapshot              := false,
     publishArtifact in Test := false,
-    publishTo               := Some("Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"),
+    publishTo               := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    },
     pomIncludeRepository    := { _ => false },
     pomExtra                := {
       <url>https://github.com/{ ri.group }/{ ri.name }</url>
