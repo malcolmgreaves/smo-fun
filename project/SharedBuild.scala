@@ -40,10 +40,11 @@ object SharedBuild {
 
   case class RepoInfo(
     group: String,
-    name: String
+    name:  String
   )
 
-  lazy val doPublish= (ri: RepoInfo) => Seq(
+
+  lazy val doPublish = (ri: RepoInfo) => Seq(
     publishMavenStyle       := true,
     isSnapshot              := false,
     publishArtifact in Test := false,
