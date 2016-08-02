@@ -1,5 +1,5 @@
 # smo-fun
-[![Build Status](https://travis-ci.org/malcolmgreaves/smo-fun.svg?branch=master)](https://travis-ci.org/malcolmgreaves/smo-fun) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.malcolmgreaves/smo-fun-core_2.11/badge.svg?style=plastic)](https://maven-badges.herokuapp.com/maven-central/io.malcolmgreaves/smo-fun_2.11)
+[![Build Status](https://travis-ci.org/malcolmgreaves/smo-fun.svg?branch=master)](https://travis-ci.org/malcolmgreaves/smo-fun) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.malcolmgreaves/smo-fun_2.11/badge.svg?style=plastic)](https://maven-badges.herokuapp.com/maven-central/io.malcolmgreaves/smo-fun_2.11)
 
 A efficient implementation of the Sequential Minimal Optimization (SMO) algorithm for training Support Vector Machines (SVMs). Exposes training and prediction in a side-effect free, functional programming style.
 
@@ -7,7 +7,7 @@ To use in your own project, add the following to your `build.sbt`:
 ```
 libraryDependencies += "io.malcolmgreaves" %% "smo-fun" % "X.Y.Z"
 ```
-Where `X.Y.Z` is the latest version (check the maven-central badge in this README). 
+Where `X.Y.Z` is the latest version (check the maven central badge in this README). 
 
 # Project Structure
 
