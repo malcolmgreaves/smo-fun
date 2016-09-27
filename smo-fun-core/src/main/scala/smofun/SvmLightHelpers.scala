@@ -128,11 +128,11 @@ object SvmLightHelpers {
   lazy val fromSvmLightFmt: Seq[String] => E[SvmDualModel] =
     lines => \/.fromTryCatchNonFatal {
       // ingore lines(0) -- unnecessary "version" tring
-      val kernelTypeInt = lines(1).toInt
-      lazy val polyKernelPow = lines(2).toDouble
+      val kernelTypeInt = parseOut(lines(1)).toInt
+      lazy val polyKernelPow = parseOut(lines(2)).toDouble
       lazy val gamma = parseOut(lines(3)).toDouble
-      lazy val sEitherSigmoidPoly = lines(4).toDouble
-      lazy val cEitherSigmoidPoly = lines(5).toDouble
+      lazy val sEitherSigmoidPoly = parseOut(lines(4)).toDouble
+      lazy val cEitherSigmoidPoly = parseOut(lines(5)).toDouble
       // ignore lines(6) -- "custom" kernel parameter
       val dimensionality = Dimensionality(parseOut(lines(7)).toInt)
       // ignore lines(8)
