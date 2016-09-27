@@ -36,7 +36,7 @@ object TrainVisualizeHyperplaneM extends App {
         |Using labeled data from:      $loc
         |Doing +/- balanced training?: $doBalanced
         |Doing Full Alpha_2 Search?:   $doFullAlphaSearch
-        |C (cost parameter):           $c
+        |C (regularization value):     $c
         |Tolerance for Alpha Change:   $tol
         |Gamma for RBF Kernel:         $gamma
      """.stripMargin

@@ -131,7 +131,8 @@ object SmoHelpers {
 
   object Kernels {
 
-    lazy val linear: Kernel = (v1, v2) => v1.dot(v2)
+    lazy val linear: Kernel =
+      (v1, v2) => v1.dot(v2)
 
     type Gamma = Double
     lazy val rbf: Gamma => Kernel =
