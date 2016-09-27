@@ -12,11 +12,12 @@ object SvmLightHelpers {
 
   sealed trait Dim
   type Dimensionality = Int @@ Dim
+  object Dimensionality {
+    def apply(x: Int): Dimensionality = Tag[Int,Dim](x)
+    def apply(x: Dimensionality): Int = Tag.unwrap(x)
+  }
 
   type E[T] = \/[Throwable, T]
-
-  lazy val whitespaceSplit: String => Seq[String] =
-    _.split("\\s+").toSeq
 
   lazy val separateIndexValue: String => (Int, Double) =
     bit => {
@@ -28,7 +29,7 @@ object SvmLightHelpers {
 
   lazy val svmLightFmtSeparate: String => (Target, Seq[(Int, Double)]) =
     line => {
-      val bits = whitespaceSplit(line)
+      val bits = line.split("\\s+")
       val target = bits.head.toDouble
 
       val fv =
@@ -36,6 +37,7 @@ object SvmLightHelpers {
           bits
             .slice(1, bits.length)
             .map { separateIndexValue }
+            .toSeq
 
         } else
           Seq.empty
@@ -76,9 +78,10 @@ object SvmLightHelpers {
       }
     }
 
-  lazy val writeVectorSvmLight: DenseVector[Double] => String =
+  lazy val writeVectorSvmLight: Vec => String =
     dv => dv
       .activeKeysIterator
+      .filter { i => math.abs(dv(i)) > 1e-20 }
       .map { i => s"${i + 1}:${dv(i)}" }
       .mkString(" ")
 
@@ -124,12 +127,42 @@ object SvmLightHelpers {
 
   lazy val fromSvmLightFmt: Seq[String] => E[SvmDualModel] =
     lines => \/.fromTryCatchNonFatal {
-      // ignore lines(0)
-      // ignore lines(1-2) TODO handle more kernels
-      val gamma = parseOut(lines(3)).toDouble
-      // ignore lines(4-6) TODO handle more kernels
-      val dimensionality = Tag[Int, Dim](parseOut(lines(7)).toInt)
+      // ingore lines(0) -- unnecessary "version" tring
+      val kernelTypeInt = lines(1).toInt
+      lazy val polyKernelPow = lines(2).toDouble
+      lazy val gamma = parseOut(lines(3)).toDouble
+      lazy val sEitherSigmoidPoly = lines(4).toDouble
+      lazy val cEitherSigmoidPoly = lines(5).toDouble
+      // ignore lines(6) -- "custom" kernel parameter
+      val dimensionality = Dimensionality(parseOut(lines(7)).toInt)
       // ignore lines(8)
+
+      val kernelF: Kernel = kernelTypeInt match {
+        case 0 =>
+          SmoHelpers.Kernels.linear
+
+        case 1 =>
+          // use:
+          // polyKernelPow
+          // sEitherSigmoidPoly
+          // cEitherSigmoidPoly
+          throw new IllegalArgumentException("Cannot handle polynomial kernel!")
+
+        case 2 =>
+          SmoHelpers.Kernels.rbf(gamma)
+
+        case 3 =>
+          // use:
+          // sEitherSigmoidPoly
+          // cEitherSigmoidPoly
+          throw new IllegalArgumentException("Cannot handle sigmoid tanh kernel!")
+
+        case unk =>
+          throw new IllegalArgumentException(
+            s"Unrecognized & unable to handle kernel intgeter code: $unk"
+          )
+      }
+
       val nSvs = parseOut(lines(9)).toInt - 1
       val b = parseOut(lines(10)).toDouble
       // now onto the support vectors!
@@ -143,7 +176,7 @@ object SvmLightHelpers {
         bothAlphaTargets = bothATs.toIndexedSeq,
         supportVectors = svs.toIndexedSeq,
         b = b,
-        K = SmoHelpers.Kernels.rbf(gamma)
+        K = kernelF
       )
     }
 
